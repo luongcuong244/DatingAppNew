@@ -2,23 +2,23 @@ import React, { Component } from "react";
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from "@react-navigation/stack";
 import LogIn from './src/screens/LogIn';
-// import LogUp from './src/screens/LogUp';
-// import SigninWithNumberPhone from './src/screens/SigninWithNumberPhone'
-// import BasicInformation from './src/screens/BasicInformation'
-// import MoreInformation from './src/screens/MoreInformation'
-// import SelectingValue from './src/screens/SelectingValue'
-// import TabsManager from './src/screens/Tabs/TabsManager';
-// import ChatRoom from "./src/screens/ChatRoom";
-// import UserProfile from './src/screens/UserProfile';
-// import Setting from "./src/screens/Setting";
+import LogUp from './src/screens/LogUp';
+import SigninWithNumberPhone from './src/screens/SigninWithNumberPhone'
+import BasicInformation from './src/screens/BasicInformation'
+import MoreInformation from './src/screens/MoreInformation'
+import SelectingValue from './src/screens/SelectingValue'
+import TabsManager from './src/screens/Tabs/TabsManager';
+import ChatRoom from "./src/screens/ChatRoom";
+import UserProfile from './src/screens/UserProfile';
+import Setting from "./src/screens/Setting";
 import { LogBox } from "react-native";
-// import TransitionScreen from './src/animated/TransitionScreen';
-// import Verification from "./src/screens/Verification";
-// import EnterAddress from "./src/screens/ForgotPassword/EnterAddress";
-// import ResetPassword from "./src/screens/ForgotPassword/ResetPassword";
-// import MatchAndChat from "./src/screens/MatchAndChat";
-// import SearchByDistance from './src/screens/SearchByDistance';
-// import QuickSearch from "./src/screens/QuickSearch";
+import TransitionScreen from './src/animated/TransitionScreen';
+import Verification from "./src/screens/Verification";
+import EnterAddress from "./src/screens/ForgotPassword/EnterAddress";
+import ResetPassword from "./src/screens/ForgotPassword/ResetPassword";
+import MatchAndChat from "./src/screens/MatchAndChat";
+import SearchByDistance from './src/screens/SearchByDistance';
+import QuickSearch from "./src/screens/QuickSearch";
 
 LogBox.ignoreAllLogs();
 
@@ -36,7 +36,7 @@ export default class App extends Component {
                 >
                     <Stack.Screen name="LogIn" component={LogIn} />
 
-                    {/* <Stack.Screen
+                    <Stack.Screen
                         name="LogUp"
                         component={LogUp}
                         options={{
@@ -140,7 +140,7 @@ export default class App extends Component {
                         options={{
                             cardStyleInterpolator: TransitionScreen.leftToRight,
                         }}
-                    /> */}
+                    />
                 </Stack.Navigator>
             </NavigationContainer>
         )
