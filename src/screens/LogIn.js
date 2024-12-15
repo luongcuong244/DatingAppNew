@@ -114,58 +114,10 @@ export default class LogIn extends Component {
           }}
           source={require('../../assets/imgs/background.jpg')}
         >
-          <TouchableOpacity
-            style={[styles.socialNetworkButton, { marginBottom: 15 }]}
-            activeOpacity={0.7}
-            onPress={this.loginWithFacebook}
-          >
-            <LinearGradient
-              style={styles.socialNetworkLinear}
-              colors={["#00b7ff", "rgba(0,85,180,0.7)"]}
-            >
-              <View style={styles.iconContainer}>
-                <FacebookIcon width={13.37} height={24.51} ></FacebookIcon>
-              </View>
-              <Text style={styles.socialNetworkText} >Đăng nhập bằng Facebook</Text>
-            </LinearGradient>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[styles.socialNetworkButton, { marginBottom: 15 }]}
-            activeOpacity={0.7}
-            onPress={this.loginWithPhone}
-          >
-            <LinearGradient
-              style={styles.socialNetworkLinear}
-              colors={["#27D889", "rgba(0,126,103,0.7)"]}
-            >
-              <View style={styles.iconContainer}>
-                <PhoneIcon width={24.35} height={23.07} ></PhoneIcon>
-              </View>
-              <Text style={styles.socialNetworkText} >Đăng nhập bằng số điện thoại</Text>
-            </LinearGradient>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[styles.socialNetworkButton, { marginBottom: 15 }]}
-            activeOpacity={0.7}
-            onPress={this.loginWithGoogle}
-          >
-            <LinearGradient
-              style={styles.socialNetworkLinear}
-              colors={["#FE5C3D", "rgba(206,0,57,0.7)"]}
-            >
-              <View style={styles.iconContainer}>
-                <GoogleIcon width={34.16} height={21.4} ></GoogleIcon>
-              </View>
-              <Text style={styles.socialNetworkText} >Đăng nhập bằng Google</Text>
-            </LinearGradient>
-          </TouchableOpacity>
-
           <KeyboardAvoidingView
             behavior={'padding'}
             keyboardVerticalOffset={20}
-            style={{ flex: 1, alignItems: 'center', flexDirection: 'column-reverse', marginBottom: 30 }}
+            style={{ flex: 1, alignItems: 'center', flexDirection: 'column-reverse', marginBottom: 30, justifyContent: 'center' }}
           >
             <TouchableOpacity
               activeOpacity={0.7}
@@ -194,7 +146,7 @@ const styles = StyleSheet.create({
   imageBackground: {
     height: HEIGHT_SCREEN,
     alignItems: 'center',
-    flexDirection: 'column-reverse',
+    flexDirection: 'column',
     paddingBottom: 25,
   },
   socialNetworkButton: {

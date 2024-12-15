@@ -399,7 +399,7 @@ export default function FavouriteTab(props) {
             </View>
 
             <Modal
-                animationType="node"
+                animationType="none"
                 visible={showFilter}
                 transparent={true}
             >

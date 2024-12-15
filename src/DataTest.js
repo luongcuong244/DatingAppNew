@@ -43,9 +43,7 @@ const dataUserTest = [
         address: 'Hà Nội',
         avatar: 'https://1.bp.blogspot.com/-ussdmBPJN00/X3f2xUi8v9I/AAAAAAAAAsE/pfqSHD88MrEBJaSlVRWdmN-vswQOp8C6wCLcBGAsYHQ/s1286/beautiful%2Bgirls.jpg',
         listImages: [
-            'https://hinhanhdephd.com/wp-content/uploads/2017/06/anh-nguoi-dep-hinh-nguoi-mau-de-thuong-nhat-qua-dat-17.jpg',
             'https://i.pinimg.com/474x/d5/f3/53/d5f35325a030ad5ab9af33e411b1d9f1.jpg',
-            'https://anhdep123.com/wp-content/uploads/2021/03/Tong-hop-nhung-hinh-anh-sieu-mau-nam-dep-2.jpg',
             'https://nhansusaigon.com/upload/activation/cosplay/model/thue-model-chuyen-nghiep-hcm-09.jpg',
             'https://luv.vn/wp-content/uploads/2021/09/hinh-anh-nguoi-mau-lam-hinh-nen-dien-thoai-47.jpg',
             'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQxAYqmbd0s2Zrw81YI3mlLgc0IC2dLg2dGGk5G_-b2rQmVOH886lJfWOVCR2IMYiRI21M&usqp=CAU',

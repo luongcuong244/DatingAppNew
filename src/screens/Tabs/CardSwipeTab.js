@@ -34,8 +34,8 @@ const Colors = {
 
 export default function CardSwipeTab(props) {
 
-    const heightCard = useRef(0);
-    const widthCard = useRef(0);
+    const heightCard = useRef(529.0909090909091);
+    const widthCard = useRef(352.72727272727275);
     const isMove = useRef(false);
     const isTakeBackCard = useRef(false);
 
@@ -182,6 +182,8 @@ export default function CardSwipeTab(props) {
             });
         }
 
+        console.log("name above: ", formatName(data[userIndex]));
+
         return (
             <ImageBackground
                 style={[
@@ -280,6 +282,8 @@ export default function CardSwipeTab(props) {
         if (isTakeBackCard.current) {
             indexOfImageBackground = isTakeBackCard.current.indexOfImage;
         }
+
+        console.log("name below: ", formatName(data[indexOfCard]));
 
         return (
             <ImageBackground
@@ -387,11 +391,11 @@ export default function CardSwipeTab(props) {
             opacityNopeIcon.value = 1;
             cardAbove_TranslationX.value = withTiming(-2 * WIDTH_SCREEN, {
                 duration: 600,
+            }, () => {
+                runOnJS(handleClickSkipIcon)();
             });
             cardAbove_TranslationY.value = withTiming(20);
             rotateCardAbove.value = withTiming('-15deg');
-
-            runOnJS(handleClickSkipIcon)();
         },
     });
 
@@ -486,6 +490,13 @@ export default function CardSwipeTab(props) {
             opacityLikeIcon.value = 0;
             opacityNopeIcon.value = 0;
         }, 200)
+
+        setTimeout(() => {
+            console.log("cardAbove_TranslationX: ", cardAbove_TranslationX.value);
+            console.log("cardAbove_TranslationY: ", cardAbove_TranslationY.value);
+            // reload UI
+            setReload(!reload);
+        }, 500);
     }
 
     const takeBackCard = () => {
@@ -661,7 +672,6 @@ export default function CardSwipeTab(props) {
     }
 
     const WithHOC = gestureHandlerRootHOC(() => { // phải bọc trong cái này thì mới move đc
-
         if (isLoading) {
             return (
                 <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#00444E' }} >
@@ -675,6 +685,10 @@ export default function CardSwipeTab(props) {
                 </View>
             )
         }
+
+        // prinf tranform of cardAbove
+        console.log("cardAbove_TranslationDDX: ", cardAbove_TranslationX.value);
+        console.log("cardAbove_TranslationDDY: ", cardAbove_TranslationY.value);
         // position: 'absolute', left: 0, right: 0, top: 0, bottom: 0 
         return (
             <View style={styles.containerStyle} >
@@ -775,7 +789,7 @@ export default function CardSwipeTab(props) {
                 </View>
 
                 <Modal
-                    animationType="node"
+                    animationType="none"
                     visible={showFilter}
                     transparent={true}
                 >

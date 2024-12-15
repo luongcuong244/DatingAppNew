@@ -358,7 +358,7 @@ export default SearchByDistance = (props) => {
             </Modal>
 
             <Modal
-                animationType="node"
+                animationType="none"
                 visible={showFilter}
                 transparent={true}
             >

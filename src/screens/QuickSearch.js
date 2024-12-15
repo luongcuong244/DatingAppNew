@@ -324,7 +324,7 @@ export default QuickSearch = (props) => {
             }
 
             <Modal
-                animationType="node"
+                animationType="none"
                 visible={showFilter}
                 transparent={true}
             >
