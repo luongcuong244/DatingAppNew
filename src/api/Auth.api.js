@@ -1,49 +1,22 @@
-import axios from "axios";
 import { API_URL } from './API_URL';
+import axiosApiInstance from "../config/axios.instance.config";
 
 const PATH = {
-    sign_in: API_URL + "/api/auth/signin",
-    sign_up: API_URL + "/api/auth/signup"
+    sign_in: API_URL + "/auths/login",
+    sign_up: API_URL + "/auths/register"
 }
 
 class Auth_API {
-
-    signIn(callback) {
-
-        axios.post(PATH.sign_in, {
-            headers: {
-                'x-access-token': "token",
-            },
-        }).then((res) => {
-
-        })
-            .catch(err => console.log(err));
+    signIn(userInfor) {
+        return axiosApiInstance.post(PATH.sign_in, userInfor);
     }
 
-    signUp(userInfor, callback) {
-        axios.post(PATH.sign_up, {
-            body: {
-                userInfor,
-            }
-        }).then((res) => {
-            callback(res.data.messages, res.data.infor);
-        })
-        .catch(err => console.log(err));
+    signUp(userInfor) {
+        return axiosApiInstance.post(PATH.sign_up, userInfor);
     }
 
     signOut(callback) {
         
-    }
-
-    signInWithPhone(numberPhone, callback) {
-        axios.post("", {
-            body: {
-                numberPhone
-            }
-        }).then((res) => {
-            callback(res);
-        })
-        .catch(err => console.log(err));
     }
 }
 

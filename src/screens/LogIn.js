@@ -3,38 +3,17 @@ import {
   ImageBackground,
   StyleSheet,
   TouchableOpacity,
-  View,
   ScrollView,
   KeyboardAvoidingView,
-  Dimensions
+  Dimensions,
+  Alert
 } from "react-native";
 import Text from '../components/AppText';
-import LinearGradient from "react-native-linear-gradient";
-import { AccessToken, LoginManager, Settings } from 'react-native-fbsdk-next';
-import { GoogleSignin } from '@react-native-google-signin/google-signin';
-import GoogleIcon from '../../assets/vectors/google-icon.svg';
-import PhoneIcon from '../../assets/vectors/phone-icon.svg';
-import FacebookIcon from '../../assets/vectors/facebook-icon.svg';
 import InputForm from "../components/InputForm";
+import AuthApi from "../api/Auth.api";
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const HEIGHT_SCREEN = Dimensions.get("window").height;
-
-// Settings.setAppID('333094938669452');
-// Settings.initializeSDK();
-
-GoogleSignin.configure({
-  webClientId: '825638128531-1scuabiqho5g2r73e8hgjbs8qnfa7217.apps.googleusercontent.com',
-  offlineAccess: true,
-});
-
-async function onGoogleButtonPress() {
-
-  // Get the users ID token
-  const { idToken } = await GoogleSignin.signIn();
-  console.log('Token from Google: ', idToken);
-
-  GoogleSignin.signOut();
-}
 
 export default class LogIn extends Component {
 
@@ -46,51 +25,26 @@ export default class LogIn extends Component {
     }
   }
 
-  loginWithFacebook() {
-    LoginManager.logInWithPermissions(['public_profile', 'email', 'user_friends']).then(
-      function (result) {
-        if (result.isCancelled) {
-          console.log("Login cancelled");
-        } else {
-          // console.log(
-          //   "Login success with permissions: " +
-          //   result.grantedPermissions.toString()
-          // );
-          AccessToken.getCurrentAccessToken().then(
-            (data) => {
-              console.log("Token from Facebook: ", data.accessToken.toString());
-              // send the token to server
-            }
-          )
-          LoginManager.logOut();
-        }
-      },
-      function (error) {
-        console.log("Login fail with error: " + error);
-      }
-    );
-  }
-
-  loginWithGoogle = () => {
-    onGoogleButtonPress()
-      .then(() => {
-        console.log('Done');
-      })
-      .catch((error) => {
-        console.log(error);
-      })
-  }
-
-  loginWithPhone = () => {
-    this.props.navigation.navigate('SigninWithNumberPhone');
-  }
-
   onForgotPassword = () => {
     this.props.navigation.navigate("EnterAddress");
   }
 
   onPressRightButton = (address, addressType, passwordValue, reenterPasswordValue) => {
-    this.props.navigation.navigate("BasicInformation");
+    AuthApi.signIn({
+      mobile: address,
+      password: passwordValue
+    }).then((res) => {
+      if (res.data.accessToken) {
+        AsyncStorage.setItem('user', JSON.stringify({}));
+        AsyncStorage.setItem('accessToken', res.data.accessToken);
+        this.props.navigation.navigate("BasicInformation");
+        // dispatch(setUser(res.data.user));
+      } else {
+        Alert.alert("Something went wrong... Try later!")
+      }
+    }).catch(err => {
+      Alert.alert(null, err.response.data.mes);
+    });
   }
 
   onPressLeftButton = () => {

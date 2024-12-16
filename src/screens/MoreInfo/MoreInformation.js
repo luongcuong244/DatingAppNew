@@ -2,12 +2,14 @@ import React, { Component } from "react";
 import { View, StyleSheet, Text, ScrollView, TouchableOpacity, Dimensions, Alert, BackHandler } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import ActionSheet from "@alessiocancian/react-native-actionsheet";
-import ArrowRight from '../../assets/vectors/arrow-right.svg';
-import { currentUser } from "../data/CurrentUser";
-import { inforFormatForTrans } from "../module/InforFormatForTrans";
-import DeleteHobbyIcon from '../../assets/vectors/delete-hobby.svg';
-import ListPhotos from "../components/ListPhotos";
-import UserApi from "../api/User.api";
+import ArrowRight from '../../../assets/vectors/arrow-right.svg';
+import { inforFormatForTrans } from "../../module/InforFormatForTrans";
+import DeleteHobbyIcon from '../../../assets/vectors/delete-hobby.svg';
+import MoreInfoListPhotos from "./MoreInfoListPhotos";
+import UserApi from "../../api/User.api";
+import API_URL from "../../api/API_URL";
+import axios from "axios";
+import axiosApiInstance from "../../config/axios.instance.config";
 
 const WIDTH = Dimensions.get('window').width;
 
@@ -81,7 +83,6 @@ export default class MoreInformation extends Component {
     }
 
     onUpdateListPhotos(newList) {
-        console.log('set');
         this.setState({
             user: {
                 ...this.state.user,
@@ -93,11 +94,40 @@ export default class MoreInformation extends Component {
     }
 
     handleNextScreen() {
-        UserApi.updateUserInfor(this.state.user, () => {
-            // do something
-        })
-        this.props.navigation.navigate('TabsManager');
+        console.log("user: ", this.state.user);
+        // UserApi.updateInfo(this.state.user)
+        //     .then((res) => {
+                
+        //     })
+        //     .catch((err) => {
+        //         Alert.alert(err.response.data.mes);
+        //     });
+        //this.props.navigation.navigate('TabsManager');
+        this.uploadImage(this.state.user.listPhotos[0]);
     }
+    
+    // Upload image to the Node.js server
+    uploadImage = (image) => {
+        const formData = new FormData();
+        formData.append('photo', {
+            uri: image.path,
+            type: image.mime,  // e.g., 'image/jpeg'
+            name: image.filename,  // e.g., 'my-photo.jpg'
+        });
+
+        // Use Axios to send the image to the server
+        axiosApiInstance.post(API_URL + '/upload', formData, {
+            headers: {
+                'Content-Type': 'multipart/form-data',  // Required for file upload
+            },
+        })
+            .then(response => {
+                console.log('Image uploaded successfully:', response.data);
+            })
+            .catch(error => {
+                console.error('Error uploading image:', error.response.data);
+            });
+    };
 
     onPressActionSheet(index) {
         switch (index) {
@@ -126,8 +156,9 @@ export default class MoreInformation extends Component {
                 >
                     <Text style={styles.textHeader}>Thêm ảnh</Text>
 
-                    <ListPhotos
-                        userId={this.state.user.userId}
+                    <MoreInfoListPhotos
+                        // userId={this.state.user.userId}
+                        onGetPhotos={this.onUpdateListPhotos}
                     />
 
                     <View style={styles.scrollContainer}  >

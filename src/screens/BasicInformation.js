@@ -191,7 +191,7 @@ export default class BasicInformation extends Component {
             this.props.navigation.navigate('MoreInformation', {
                 name: this.state.name,
                 country: this.state.country,
-                address: this.state.city,
+                city: this.state.city,
                 gender: this.state.gender,
                 dateOfBirth: this.state.dateOfBirth,
             });
