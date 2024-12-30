@@ -86,7 +86,7 @@ export default EnterAddress = ({ navigation }) => {
                             <TextInput
                                 style={styles.textInput}
                                 keyboardType="visible-password"
-                                placeholder="Nhập số điện thoại hoặc email"
+                                placeholder="Nhập số điện thoại"
                                 placeholderTextColor={'rgba(200,200,200,0.5)'}
                                 onChangeText={onChangeTextAddress}
                             />

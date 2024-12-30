@@ -76,12 +76,12 @@ export default class LogIn extends Component {
             keyboardVerticalOffset={20}
             style={{ flex: 1, alignItems: 'center', flexDirection: 'column-reverse', marginBottom: 30, justifyContent: 'center' }}
           >
-            {/* <TouchableOpacity
+            <TouchableOpacity
               activeOpacity={0.7}
               onPress={this.onForgotPassword}
             >
               <Text style={styles.forgotPassword}>Quên mật khẩu</Text>
-            </TouchableOpacity> */}
+            </TouchableOpacity>
 
             <InputForm
               leftButtonLabel={"Đăng ký"}

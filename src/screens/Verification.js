@@ -12,6 +12,7 @@ import {
     Dimensions,
     KeyboardAvoidingView
 } from "react-native";
+import auth from '@react-native-firebase/auth';
 
 const HEIGHT_SCREEN = Dimensions.get('window').height;
 
@@ -28,7 +29,9 @@ export default class Verification extends Component {
             fifthNumber: '',
             sixthNumber: '',
             verified: false,
+            confirm: null,
         }
+        this.confirm = createRef();
         this.firstRef = createRef();
         this.secondRef = createRef();
         this.thirdRef = createRef();
@@ -39,6 +42,38 @@ export default class Verification extends Component {
     
         this.handleBackButton = this.handleBackButton.bind(this);
         this.handleContinueButton = this.handleContinueButton.bind(this);
+    }
+
+    toE164Format(phoneNumber, countryCode = '+84') {
+        if (!phoneNumber.startsWith(countryCode)) {
+            // Remove leading zero, if present
+            if (phoneNumber.startsWith('0')) {
+                phoneNumber = phoneNumber.slice(1);
+            }
+            // Add the country code
+            return `${countryCode}${phoneNumber}`;
+        }
+        return phoneNumber;
+    };
+
+    componentDidMount() {
+        console.log("componentDidMount");
+        const phoneNumber = this.toE164Format(this.props.route.params.address);
+        console.log("phoneNumber", phoneNumber);
+        auth().signOut();
+        setTimeout(() => {
+            auth().signInWithPhoneNumber(phoneNumber)
+                .then(confirm => {
+                    // save confirm to state
+                    console.log("set confirm");
+                    this.setState({
+                        confirm: confirm
+                    });
+                })
+                .catch(error => {
+                    Alert.alert(error.message);
+                });
+        }, 2000);
     }
 
     getAllValue() {
@@ -159,17 +194,38 @@ export default class Verification extends Component {
 
     handleContinueButton() {
         if (this.state.verified) {
-            switch (this.props.route.params.purpose) {
-                case 'log_up': {
-                    this.props.navigation.navigate('LogIn');
-                    break;
+            if (this.state.verified === false) {
+                return;
+            }
+            const code = this.state.firstNumber + this.state.secondNumber + this.state.thirdNumber + this.state.fourthNumber + this.state.fifthNumber + this.state.sixthNumber;
+            console.log('code', code);
+            try {
+                if (!this.state.confirm) {
+                    Alert.alert('Something went wrong...');
+                    return;
                 }
-                case 'password_retrieval': {
-                    this.props.navigation.navigate('ResetPassword', {
-                        address: this.props.route.params.address
+                this.state.confirm.confirm(code)
+                    .then(() => {
+                        Alert.alert('Success!');
+                    })
+                    .catch(error => {
+                        Alert.alert('Invalid code.');
                     });
-                    break;
-                }
+                // switch (this.props.route.params.purpose) {
+                //     case 'log_up': {
+                //         this.props.navigation.navigate('LogIn');
+                //         break;
+                //     }
+                //     case 'password_retrieval': {
+                //         this.props.navigation.navigate('ResetPassword', {
+                //             address: this.props.route.params.address
+                //         });
+                //         break;
+                //     }
+                // }
+            } catch (error) {
+                console.log(error);
+                Alert.alert('Invalid code.');
             }
         }
     }
