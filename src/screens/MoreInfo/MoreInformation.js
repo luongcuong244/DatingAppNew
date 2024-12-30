@@ -7,9 +7,6 @@ import { inforFormatForTrans } from "../../module/InforFormatForTrans";
 import DeleteHobbyIcon from '../../../assets/vectors/delete-hobby.svg';
 import MoreInfoListPhotos from "./MoreInfoListPhotos";
 import UserApi from "../../api/User.api";
-import API_URL from "../../api/API_URL";
-import axios from "axios";
-import axiosApiInstance from "../../config/axios.instance.config";
 
 const WIDTH = Dimensions.get('window').width;
 
@@ -94,46 +91,48 @@ export default class MoreInformation extends Component {
     }
 
     handleNextScreen() {
-        console.log("user: ", this.state.user);
-        // UserApi.updateInfo(this.state.user)
-        //     .then((res) => {
-                
-        //     })
-        //     .catch((err) => {
-        //         Alert.alert(err.response.data.mes);
-        //     });
-        //this.props.navigation.navigate('TabsManager');
-        this.uploadImage(this.state.user.listPhotos[0]);
-    }
-    
-    // Upload image to the Node.js server
-    uploadImage = (image) => {
-        const formData = new FormData();
-        formData.append('photo', {
-            uri: image.path,
-            type: image.mime,  // e.g., 'image/jpeg'
-            name: image.filename,  // e.g., 'my-photo.jpg'
-        });
-
-        // Use Axios to send the image to the server
-        axiosApiInstance.post(API_URL + '/upload', formData, {
-            headers: {
-                'Content-Type': 'multipart/form-data',  // Required for file upload
-            },
-        })
-            .then(response => {
-                console.log('Image uploaded successfully:', response.data);
+        let body = new FormData();
+        for (let photo of this.state.user.listPhotos) {
+            if (photo) {
+                body.append('images', { uri: photo.path, name: photo.filename, type: photo.mime });
+            }
+        }
+        // add user's information to the body
+        for (let key in this.state.user) {
+            if (key === 'listPhotos') {
+                continue;
+            }
+            if (key === 'dateOfBirth') {
+                let time = new Date(this.state.user[key]);
+                body.append(key, time.getTime());
+                continue;
+            }
+            if (key === 'introduce') {
+                body.append("introductory", this.state.user[key]);
+            }
+            if (key === 'hobbies') {
+                body.append("hobby", JSON.stringify(this.state.user[key]));
+                continue;
+            }
+            body.append(key, this.state.user[key]);
+        }
+        
+        UserApi.updateInfo(body)
+            .then((res) => {
+                console.log('Update user information successfully:', res.data);
+                this.props.navigation.navigate('TabsManager');
             })
-            .catch(error => {
-                console.error('Error uploading image:', error.response.data);
+            .catch((err) => {
+                console.error('Error uploading image:', err.response.data);
+                Alert.alert(err.response.data.mes);
             });
-    };
+    }
 
     onPressActionSheet(index) {
         switch (index) {
             case 0: {
                 let inforCopyArray = this.state.userInfor;
-                let index = inforCopyArray.findIndex(element => element.key == 'hobby');
+                let index = inforCopyArray.findIndex(element => element.key == 'hobbies');
                 let newArray = inforCopyArray[index].value.filter((hobby) => hobby != this.state.hobbyItemToDelete);
                 inforCopyArray[index].value = newArray;
                 this.setState({
@@ -168,7 +167,7 @@ export default class MoreInformation extends Component {
 
                                     const Icon = item.icon;
 
-                                    if (item.key === 'userName' || item.key === 'gender') {
+                                    if (item.key === 'name' || item.key === 'gender') {
                                         return;
                                     }
 
@@ -184,7 +183,7 @@ export default class MoreInformation extends Component {
                                             </View>
 
                                             {
-                                                item.key == 'hobby' ? (
+                                                item.key == 'hobbies' ? (
                                                     <View style={[
                                                         styles.inputContainer,
                                                         { flexWrap: 'wrap', flexDirection: 'row', alignItems: 'flex-start', paddingVertical: 8, justifyContent: 'flex-start', paddingHorizontal: 0 }

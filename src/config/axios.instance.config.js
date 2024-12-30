@@ -18,7 +18,6 @@ axiosApiInstance.interceptors.request.use(
 
         const accessToken = await AsyncStorage.getItem('accessToken');
         config.headers['Authorization'] = `Bearer ${accessToken}`;
-        console.log("old accessToken: ", accessToken);
         return config;
     },
     error => {

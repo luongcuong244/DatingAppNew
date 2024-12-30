@@ -2,39 +2,46 @@ import { API_URL } from './API_URL';
 import axiosApiInstance from "../config/axios.instance.config";
 
 class User_API {
-
-    getUserInfor() {
-        // let inforTest = {
-        //     name: "Lương Cường",
-        //     avatar: 'https://scontent.fhan4-3.fna.fbcdn.net/v/t39.30808-6/255378713_1691092834561076_3158250997517573052_n.jpg?_nc_cat=100&ccb=1-5&_nc_sid=09cbfe&_nc_ohc=Zbqps2RZBAMAX8LakDv&_nc_ht=scontent.fhan4-3.fna&oh=00_AT9g7WmS5Ng5ZbUHDECuE5ftMOJCz1T2Gju61XwIEb9Dtg&oe=620B9FBF',
-        //     dateOfBirth: '10/11/2002',
-        //     gender: 'Nam',
-        //     introduce: 'Tôi tên là Cường',
-        //     listImage: [
-        //         'https://images.pexels.com/photos/1261731/pexels-photo-1261731.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940',
-        //         'https://images.pexels.com/photos/1047051/pexels-photo-1047051.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940',
-        //         '',
-        //         '',
-        //         '',
-        //         '',
-        //         '',
-        //     ]
-        // }
-        // callback(inforTest);
-        // return;
-        return axiosApiInstance.get(API_URL + "/users/get-user-info");
+    getCurrentInfo() {
+        return axiosApiInstance.get(API_URL + "/users/get-current-info");
     }
 
-    updateInfo(infor) {
-        // axios.post(API_URL, {
-        //     headers: {
-        //         'x-access-token': "token",
-        //     },
-        // }).then((res) => {
-        //     //callback(res.data.infor);
-        // })
-        // .catch(err => console.log(err));
-        return axiosApiInstance.post(API_URL + "/users/update-info", infor);
+    updateInfo(body) {
+        return axiosApiInstance.post(API_URL + "/users/update-info", body, {
+            headers: {
+                'Content-Type': 'multipart/form-data',  // Required for file upload
+            },
+        });
+    }
+
+    getAll() {
+        return axiosApiInstance.get(API_URL + "/users/all");
+    }
+
+    addToListLike(body) {
+        return axiosApiInstance.post(API_URL + "/users/add-to-listlike", body);
+    }
+
+    getAllUserInListLike() {
+        return axiosApiInstance.get(API_URL + "/users/all-user-in-listlike");
+    }
+
+    getAllUserLikeMe() {
+        return axiosApiInstance.get(API_URL + "/users/all-user-like-me");
+    }
+
+    removeFromListLike(userIdToRemove) {
+        return axiosApiInstance.post(API_URL + "/users/remove-from-listlike", {
+            userIdToRemove
+        });
+    }
+
+    updateLocation(body) {
+        return axiosApiInstance.put(API_URL + "/users/location", body);
+    }
+
+    getUserNearby(body) {
+        return axiosApiInstance.post(API_URL + "/users/get-user-nearby", body);
     }
 }
 

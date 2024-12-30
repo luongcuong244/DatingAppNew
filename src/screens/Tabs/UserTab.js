@@ -21,6 +21,8 @@ import DeleteHobbyIcon from '../../../assets/vectors/delete-hobby.svg';
 import ListPhotos from '../../components/ListPhotos';
 import { currentUser } from '../../data/CurrentUser';
 import { inforFormatForTrans } from "../../module/InforFormatForTrans";
+import UserApi from '../../api/User.api';
+import { string } from 'prop-types';
 
 const WIDTH_SCREEN = Dimensions.get('window').width;
 
@@ -28,12 +30,48 @@ export default function CardSwipeTab({ navigation }) {
 
     const HobbyActionSheet = useRef();
 
-    const [user, setUser] = useState(currentUser);
-    const [userInfor, setUserInfor] = useState(inforFormatForTrans(currentUser));
+    const [isLoading, setIsLoading] = useState(true);
+    const [photos, setPhotos] = useState();
+    const [user, setUser] = useState();
+    const [userInfor, setUserInfor] = useState();
     const [hobbyItemToDelete, setHobbyItemToDelete] = useState();
 
     const [openDatePicker, setOpenDatePicker] = useState(false);
     const [isEditing, setEditing] = useState(false);
+
+    useEffect(() => {
+        fetchUserInfo();
+    }, [])
+
+    const fetchUserInfo = () => {
+        setIsLoading(true);
+        UserApi.getCurrentInfo().then((response) => {
+            setUser({
+                ...response.data.data,
+                dateOfBirth: new Date(response.data.data.dateOfBirth),
+            });
+            let newUserInfo = inforFormatForTrans({
+                ...response.data.data,
+                dateOfBirth: new Date(response.data.data.dateOfBirth),
+            })
+            setUserInfor([
+                ...newUserInfo
+            ]);
+            let photos = response.data.data.photos;
+            if (photos.length < 6) {
+                const length = photos.length;
+                for (let i = 0; i < 6 - length; i++) {
+                    photos.push('');
+                }
+            }
+            setPhotos(photos);
+        }).catch((error) => {
+            console.log(error);
+        })
+            .finally(() => {
+                setIsLoading(false);
+            });
+    }
 
     const showHobbyActionSheet = () => {
         HobbyActionSheet.current.show();
@@ -78,13 +116,79 @@ export default function CardSwipeTab({ navigation }) {
     const Header = () => {
 
         const onClickPreview = () => {
+            console.log(user);
             navigation.navigate('UserProfile', {
                 likedMe: false,
                 isNavigate: true,
+                userInfo: {
+                    ...user,
+                    dateOfBirth: user.dateOfBirth.getTime(),
+                    listImages: photos,
+                    age: Moment().diff(user.dateOfBirth, 'years'),
+                },
             });
         }
 
         const onEditable = () => {
+            if (isEditing) {
+                let newUserInfo = {};
+                for (let item of userInfor) {
+                    if (item.key === 'hobbies') {
+                        newUserInfo[item.key] = item.value.filter((hobby) => hobby !== 'Thêm');
+                        continue;
+                    }
+                    newUserInfo[item.key] = item.value;
+                }
+
+                console.log("hobby", newUserInfo.hobbies);
+
+                newUserInfo = {
+                    ...user,
+                    ...newUserInfo,
+                    dateOfBirth: user.dateOfBirth,
+                    hobby: newUserInfo.hobbies,
+                }
+
+                console.log("newUserInfo", newUserInfo);
+
+                let body = new FormData();
+                let httpPhotos = photos.filter((photo) => typeof photo === 'string' && photo && photo.startsWith('http'));
+                for (let photo of photos) {
+                    if (!photo) {
+                        continue;
+                    }
+                    if (typeof photo === 'string') {
+                        continue;
+                    }
+                    body.append('images', { uri: photo.path, name: photo.filename, type: photo.mime });
+                }
+                // add user's information to the body
+                for (let key in newUserInfo) {
+                    if (key === 'dateOfBirth') {
+                        let time = new Date(newUserInfo[key]);
+                        body.append(key, time.getTime());
+                        continue;
+                    }
+                    if (key === 'hobbies' || key === 'hobby') {
+                        body.append(key, JSON.stringify(newUserInfo[key]));
+                        continue;
+                    }
+                    if (key === 'introduce') {
+                        body.append("introductory", newUserInfo[key]);
+                    }
+                    body.append(key, newUserInfo[key]);
+                }
+                if (httpPhotos.length > 0) {
+                    body.append('httpPhotos', JSON.stringify(httpPhotos));
+                }
+
+                UserApi.updateInfo(body).then((response) => {
+                    fetchUserInfo();
+                    console.log("Update success");
+                }).catch((error) => {
+                    console.log(error.response.data.mes);
+                })
+            }
             setEditing(!isEditing)
         }
 
@@ -123,7 +227,7 @@ export default function CardSwipeTab({ navigation }) {
                                 borderColor: 'white',
                             }
                         ]}
-                        source={{ uri: user.avatar }}
+                        source={{ uri: user.photos.length > 0 && user.photos[0] }}
                     >
                         <View
                             style={[
@@ -166,7 +270,7 @@ export default function CardSwipeTab({ navigation }) {
 
     const BasicInfor = () => {
 
-        const indexOfName = userInfor.findIndex((item) => item.key === "userName");
+        const indexOfName = userInfor.findIndex((item) => item.key === "name");
         const indexOfGender = userInfor.findIndex((item) => item.key === "gender");
 
         return (
@@ -175,7 +279,7 @@ export default function CardSwipeTab({ navigation }) {
                 <Text style={styles.textHeaderStyle} >Thông tin cơ bản</Text>
 
                 <View style={[styles.inforContentWrapper, { paddingBottom: 15 }]} >
-                    <BasicInforItem label={"Tên"} value={userInfor[indexOfName].value} index={indexOfName} keyItem={'userName'} />
+                    <BasicInforItem label={"Tên"} value={userInfor[indexOfName].value} index={indexOfName} keyItem={'name'} />
 
                     <BasicInforItem label={"Ngày sinh"} value={Moment(user.dateOfBirth).format("DD/MM/YYYY")} keyItem={'dateOfBirth'} />
 
@@ -227,7 +331,11 @@ export default function CardSwipeTab({ navigation }) {
                     ]}
                 >
                     <ListPhotos
-                        userId = {user.userId}
+                        data={photos.map((photo) => typeof photo === 'string' ? photo : photo.path)}
+                        onGetPhotos={(array) => {
+                            setPhotos(array);
+                        }}
+                        isEditing={isEditing}
                     />
                 </View>
             </View>
@@ -236,7 +344,7 @@ export default function CardSwipeTab({ navigation }) {
 
     const Introductory = () => {
 
-        const index = userInfor.findIndex((item) => item.key === 'introductory');
+        const index = userInfor.findIndex((item) => item.key === 'introduce');
 
         const onPress = () => {
             editInfor(userInfor[index], index);
@@ -295,7 +403,7 @@ export default function CardSwipeTab({ navigation }) {
 
                             const Icon = item.icon;
 
-                            if (item.key === 'introductory' || item.key === 'userName' || item.key == 'gender') {
+                            if (item.key === 'introduce' || item.key === 'name' || item.key == 'gender') {
                                 return;
                             }
 
@@ -306,7 +414,7 @@ export default function CardSwipeTab({ navigation }) {
                             return (
                                 <View key={index} >
                                     {
-                                        item.key !== 'hobby' ? (
+                                        item.key !== 'hobbies' ? (
                                             <TouchableOpacity
                                                 key={index}
                                                 activeOpacity={0.7}
@@ -459,7 +567,7 @@ export default function CardSwipeTab({ navigation }) {
                     userInfor.map((obj) => {
                         return { ...obj }
                     })
-                let index = inforCopyArray.findIndex(element => element.key == 'hobby');
+                let index = inforCopyArray.findIndex(element => element.key == 'hobbies');
                 let newArray = inforCopyArray[index].value.filter((hobby) => hobby !== hobbyItemToDelete);
                 inforCopyArray[index].value = newArray;
 
@@ -480,6 +588,14 @@ export default function CardSwipeTab({ navigation }) {
         setOpenDatePicker(false);
     }
 
+    if (isLoading) {
+        return (
+            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#00444E' }} >
+                <Text style={{ color: 'white' }} >Loading...</Text>
+            </View>
+        )
+    }
+
     return (
         <View style={styles.screenStyle} >
 
@@ -491,7 +607,7 @@ export default function CardSwipeTab({ navigation }) {
                 backgroundColor: '#00444E',
                 borderTopRightRadius: 40,
                 paddingTop: 40,
-                zIndex: -1,
+                zIndex: 1,
             }} >
                 <ScrollView>
                     <View style={styles.contentStyle} >
@@ -554,6 +670,7 @@ const styles = StyleSheet.create({
         alignItems: 'flex-end',
         justifyContent: 'space-between',
         paddingBottom: 5,
+        zIndex: 2,
     },
     styleOfButtonInHeader: {
         height: 25,

@@ -11,7 +11,7 @@ export default function HomeTab (props){
         <View style = {sytles.screenStyle} >
             <TouchableOpacity
                 onPress={() => {
-                    props.navigation.navigate('SearchByDistance');
+                    props.navigation.navigate('NearbyUser');
                 }}
                 style = {sytles.buttonStyle}
             >

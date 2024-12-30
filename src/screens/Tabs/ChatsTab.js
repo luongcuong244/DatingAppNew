@@ -19,6 +19,8 @@ import ChatRow from '../../components/ChatRow';
 import { ChatListData } from '../../DataTest';
 
 import SearchIcon from '../../../assets/vectors/search.svg';
+import socketChat from '../../socket/socket.config';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const WIDTH_SCREEN = Dimensions.get('window').width;
 
@@ -87,7 +89,10 @@ const list = [
         userID: 11,
         userName: "Thảo Mai",
         avatar: 'https://images.pexels.com/photos/1391499/pexels-photo-1391499.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940',
-        userIsActive: true,
+        userIsActive: true, // bỏ
+        messages: [ // chứa toàn bộ tin nhắn
+
+        ]
     },
     {
         userID: 12,
@@ -114,11 +119,33 @@ export default function ChatsTab({ navigation }) {
     const opacityOfSearchList = useSharedValue(0);
 
     useEffect(() => {
-        setTimeout(() => {
-            setChatList(ChatListData);
-            setSearchList(list);
-            setIsLoading(false);
-        }, 3000);
+        AsyncStorage.getItem("user")
+            .then((user) => {
+                socketChat.emit("getChatList", {
+                    userId: JSON.parse(user)._id,
+                });
+                socketChat.on("getChatList", (data) => {
+                    console.log("Get chat list: ", data);
+                    setChatList(data.chatList.map((item) => {
+                        return {
+                            ...item,
+                            time: new Date(item.time),
+                        }
+                    }));
+                    // setSearchList(list);
+                    setIsLoading(false);
+                });
+                socketChat.on("update_rows", () => {
+                    socketChat.emit("getChatList", {
+                        userId: JSON.parse(user)._id,
+                    });
+                })
+            });
+
+        return () => {
+            socketChat.off("getChatList");
+            socketChat.off("update_rows");
+        }
     }, []);
 
     const uas_HeaderLabel = useAnimatedStyle(() => {
@@ -329,9 +356,11 @@ export default function ChatsTab({ navigation }) {
                 <Text style={styles.headerTittle}>Đoạn chat</Text>
             </Animated.View>
 
-            {
+            {/* {
                 SearchBar()
-            }
+            } */}
+
+            <View style={{ height: 1, width: '100%', backgroundColor: '#ffffff', justifyContent: 'center', alignItems: 'center', marginVertical: 12 }} />
 
             {
                 isLoading ? (

@@ -20,7 +20,7 @@ const Sample = [
         icon: CakeIcon,
     },
     {
-        key: 'hobby',
+        key: 'hobbies',
         title: "Sở thích",
         value: ["Nghe nhạc", "Xem phim", "Thêm"],
         icon: HobbyIcon,

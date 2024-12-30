@@ -20,6 +20,8 @@ import MatchAndChat from './src/screens/MatchAndChat';
 import SearchByDistance from './src/screens/SearchByDistance';
 import QuickSearch from './src/screens/QuickSearch';
 import UserApi from './src/api/User.api';
+import { currentUser } from './src/data/CurrentUser';
+import NearbyUser from './src/screens/NearbyUser';
 
 LogBox.ignoreAllLogs();
 
@@ -33,10 +35,11 @@ export default function App() {
     useEffect(() => {
         const fetchInitialRoute = async () => {
             try {
-                UserApi.getUserInfor()
+                UserApi.getCurrentInfo()
                     .then((res) => {
                         if (res.data) {
-                            const userName = res.data.name;
+                            //currentUser = res.data.data;
+                            const userName = res.data.data.name;
                             if (userName) {
                                 setInitialRoute('TabsManager');
                             } else {
@@ -47,6 +50,7 @@ export default function App() {
                         }
                     })
                     .catch((err) => {
+                        console.log(err.response.data.mes);
                         setInitialRoute('LogIn');
                     });
             } catch (error) {
@@ -159,6 +163,13 @@ export default function App() {
                 <Stack.Screen
                     name="QuickSearch"
                     component={QuickSearch}
+                    options={{
+                        cardStyleInterpolator: TransitionScreen.leftToRight,
+                    }}
+                />
+                <Stack.Screen
+                    name="NearbyUser"
+                    component={NearbyUser}
                     options={{
                         cardStyleInterpolator: TransitionScreen.leftToRight,
                     }}

@@ -1,5 +1,5 @@
 import React, { Component } from "react";
-import { View, StyleSheet, TouchableOpacity, ImageBackground, Image, Text, LogBox, Dimensions, Modal, Pressable, ScrollView } from "react-native";
+import { View, StyleSheet, TouchableOpacity, ImageBackground, Image, Text, LogBox, Dimensions, Modal, Pressable, ScrollView, Button, Alert } from "react-native";
 import { GiftedChat, Avatar, Bubble, Send, InputToolbar, Actions, Composer, Day } from "react-native-gifted-chat/";
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import ImagePicker from "react-native-image-crop-picker";
@@ -13,6 +13,9 @@ import SoundPlayer from 'react-native-sound-player';
 import MultiSlider from '@ptomasroos/react-native-multi-slider';
 import Chat_API from '../api/Chat.api';
 import DisplayImageFullScreen from '../components/DisplayImageFullScreen';
+import socketChat from '../socket/socket.config';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import BottomSheet from 'react-native-simple-bottom-sheet';
 
 LogBox.ignoreLogs(['Animated.event now requires a second argument for options']);
 
@@ -25,8 +28,34 @@ export default class ChatRoom extends Component {
     constructor(props) {
         super(props);
         this.state = {
+            isOpen: false,
+            recallMessage: null,
             guest: null,
-            messages: [],
+            user: null,
+            messages: [
+                // { 
+                //     "_id": "97feb627-a480-4b6c-855f-9b19d9bdb188", 
+                //     "createdAt": new Date(), 
+                //     "pending": true, 
+                //     "received": false, 
+                //     "sent": false, 
+                //     "text": "Test tin nhan", 
+                //     "user": { 
+                //         "_id": 1, 
+                //         "avatar": "https://images.pexels.com/photos/1580274/pexels-photo-1580274.jpeg?auto=compress&cs=tinysrgb&dpr=1&w=500", 
+                //         "name": "Lương Cường",
+                //     },
+                //     // "guest": {
+                //     //     "_id": 1,
+                //     //     "avatar": "https://images.pexels.com/photos/1580274/pexels-photo-1580274.jpeg?auto=compress&cs=tinysrgb&dpr=1&w=500",
+                //     //     "name": "Lương Cường",
+                //     // },
+                //     "image": "", // url
+                //     "video": "", // url
+                //     "file": "", // url
+                //     "system": true,
+                //}
+            ],
             video: null,
             file: null,
             audio: null,
@@ -52,17 +81,62 @@ export default class ChatRoom extends Component {
     }
 
     componentDidMount() {
-        const id = this.props.route.params.userID;
-        Chat_API.getMessagesAndGuestInfor((messages, infor) => {
-            this.setState({
-                message: messages,
-                guest: {
-                    ...infor,
-                    userName: this.props.route.params.userName, // có thể xóa
-                    avatar: this.props.route.params.avatar, // có thể xóa
-                },
-            })
-        }, id);
+        const id = this.props.route.params.userId;
+        // Chat_API.getMessagesAndGuestInfor((messages, infor) => {
+        //     this.setState({
+        //         message: messages,
+        //         guest: {
+        //             ...infor,
+        //             userName: this.props.route.params.userName, // có thể xóa
+        //             avatar: this.props.route.params.avatar, // có thể xóa
+        //         },
+        //     })
+        // }, id);
+
+        this.setState({
+            guest: {
+                _id: id,
+                userName: this.props.route.params.userName,
+                avatar: this.props.route.params.avatar,
+            }
+        })
+
+        AsyncStorage.getItem("user")
+            .then((user) => {
+                socketChat.emit("getAllMessages", {
+                    userId: JSON.parse(user)._id,
+                    guestId: id,
+                });
+                this.setState({
+                    user: {
+                        _id: JSON.parse(user)._id,
+                        userName: JSON.parse(user).name,
+                        avatar: JSON.parse(user).photos ? JSON.parse(user).photos[0] : null,
+                    },
+                })
+                socketChat.on("getAllMessages", (messages) => {
+                    this.setState({
+                        messages: messages,
+                    })
+                });
+                socketChat.on("newMessage", (message) => {
+                    this.setState(previousState => ({
+                        messages: GiftedChat.append(previousState.messages, message),
+                    }));
+                });
+
+                // thu hooid tin nhan
+                // update database
+                // io.emit("update_messages");
+
+                socketChat.on("update_messages", () => {
+                    socketChat.emit("getAllMessages", {
+                        userId: JSON.parse(user)._id,
+                        guestId: id,
+                    });
+                    socketChat.emit("update_rows");
+                })
+            });
     }
 
     async componentWillUnmount() {
@@ -73,6 +147,9 @@ export default class ChatRoom extends Component {
         if (infor) {
             SoundPlayer.stop();
         }
+        socketChat.off("getAllMessages");
+        socketChat.off("newMessage");
+        socketChat.off("update_messages");
     }
 
     _onSend(message = []) {
@@ -93,49 +170,33 @@ export default class ChatRoom extends Component {
         message[0].received = false;
         message[0].pending = true;
 
-        this.setState(previousState => ({
-            messages: GiftedChat.append(previousState.messages, message[0]),
-        }));
+        // this.setState(previousState => ({
+        //     messages: GiftedChat.append(previousState.messages, message[0]),
+        // }));
 
-        //Chat_API.sendMessage(this.updateMesssages,message[0]);
+        socketChat.emit("send_message", {
+            message: message[0],
+            guestId: this.props.route.params.userId,
+        });
+        setTimeout(() => {
+            socketChat.emit("update_rows");
+        }, 2000);
     }
 
     renderAvatar(props) {
+        const { currentMessage } = props;
         return (
             <Avatar
                 {...props}
+                showAvatarForEveryMessage
                 imageStyle={{
                     left: {
-                        height: 35,
-                        width: 35,
+                        height: 30,
+                        width: 30,
                         borderRadius: 25
                     }
                 }}
             ></Avatar>
-        )
-    }
-
-    renderBubble(props) {
-        const { image, video, audio, file } = props.currentMessage;
-        let border = image || video || audio || file;
-        return (
-            <Bubble
-                {...props}
-                wrapperStyle={{
-                    right: border ? {
-                        backgroundColor: '#2e64e5', // màu background tin nhắn
-                        borderTopRightRadius: 15,
-                    } : {
-                        backgroundColor: '#2e64e5', // màu background tin nhắn
-                    }
-                }}
-                textStyle={{
-                    right: {
-                        color: '#fff', // màu chữ tin nhắn
-                    },
-                }}
-                usernameStyle={{ color: '#009688' }}
-            ></Bubble>
         )
     }
 
@@ -649,16 +710,6 @@ export default class ChatRoom extends Component {
         </View>
     }
 
-    renderTime(props) {
-        if (props.currentMessage && props.currentMessage.createdAt) {
-            let date = moment(props.currentMessage.createdAt).utcOffset('+0700').format("HH:mm"); // format theo múi giờ VN ( sau này có lẽ cần đổi )
-            return (
-                <Text style={{ fontSize: 10.5, color: 'white', marginHorizontal: 10, marginBottom: 6, bottom: 1, letterSpacing: 0.3 }}>{date}</Text>
-            )
-        }
-        return null;
-    }
-
     renderDay(props) {
         return (
             <Day
@@ -672,27 +723,27 @@ export default class ChatRoom extends Component {
         )
     }
 
-    renderTicks(currentMessage) {
-
-        if (!currentMessage) {
-            return null;
-        }
+    renderSystemMessage(props) {
         return (
-            currentMessage.received ? (
-                <Ionicons name="ios-eye-outline" size={17} color={'white'} style={{ bottom: 2, right: 5 }} />
-            ) : currentMessage.sent ? (
+            <View
+                style={{
+                    padding: 10,
+                    marginHorizontal: 10,
+                    marginBottom: 5,
+                    display: 'flex',
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                }}>
                 <Text
                     style={{
-                        bottom: 5,
-                        right: 5,
-                        color: 'white'
+                        color: 'white',
+                        fontSize: 15,
+                        textAlign: 'center',
                     }}
-                >✓</Text>
-            ) : currentMessage.pending ? (
-                <MaterialIcons name="panorama-fish-eye" size={15} color={'white'} style={{ bottom: 2, right: 5 }} />
-            ) : null
-
-        )
+                >{props.currentMessage.text}</Text>
+            </View>
+        );
     }
 
     formatFileSize(size) {
@@ -800,24 +851,26 @@ export default class ChatRoom extends Component {
         })
     }
 
-    goBack(){
+    goBack() {
         this.props.navigation.goBack();
     }
 
-    showProfile(){
-        this.props.navigation.navigate("UserProfile", {
-            likedMe: false,
-            isNavigate: true,
-        });
+    showProfile() {
+        // console.log("Show profile", this.state.guest);
+        // this.props.navigation.navigate("UserProfile", {
+        //     likedMe: false,
+        //     isNavigate: true,
+        //     userInfo: this.state.guest,
+        // });
     }
 
-    onBackVideoPlayer(){
+    onBackVideoPlayer() {
         this.setState({
             videoToShowFullScreen: null,
         })
     }
 
-    onExitImageFullScreen(){
+    onExitImageFullScreen() {
         this.setState({
             imageToShowFullScreen: null,
         })
@@ -825,7 +878,7 @@ export default class ChatRoom extends Component {
 
     render() {
 
-        const { guest } = this.state;
+        const { guest, user } = this.state;
 
         return (
             <ImageBackground
@@ -833,7 +886,7 @@ export default class ChatRoom extends Component {
                 source={{ uri: 'https://static.vecteezy.com/system/resources/previews/002/188/833/non_2x/chat-wallpaper-social-media-message-background-copy-space-for-a-text-vector.jpg' }}
             >
                 {
-                    this.state.guest != null ? (
+                    this.state.guest != null && this.state.user != null ? (
                         <View style={{ flex: 1 }} >
                             <View View style={styles.header} >
                                 <TouchableOpacity
@@ -841,7 +894,7 @@ export default class ChatRoom extends Component {
                                     activeOpacity={0.7}
                                     onPress={this.goBack}
                                 >
-                                    <Ionicons name="ios-chevron-back" color={'#e75854'} size={35} />
+                                    <MaterialIcons name="arrow-back-ios" color={'#e75854'} size={30} />
                                 </TouchableOpacity>
 
                                 <TouchableOpacity
@@ -871,28 +924,157 @@ export default class ChatRoom extends Component {
 
                             <GiftedChat
                                 messages={this.state.messages}
-                                user={{
-                                    _id: guest.userID,
-                                    name: guest.userName,
-                                    avatar: guest.avatar,
-                                }}
+                                user={user}
                                 onSend={this._onSend}
                                 renderActions={this.renderActions}
                                 renderAvatar={this.renderAvatar}
-                                renderBubble={this.renderBubble}
+                                renderBubble={(props) => {
+                                    const { image, video, audio, file } = props.currentMessage;
+                                    let border = image || video || audio || file;
+                                    if (props.currentMessage.revoked) {
+                                        return (
+                                            <Bubble
+                                                {...props}
+                                                currentMessage={{
+                                                    ...props.currentMessage,
+                                                    text: "Tin nhắn đã bị thu hồi",
+                                                }}
+                                                wrapperStyle={{
+                                                    right: {
+                                                        backgroundColor: '#2e64e5', // màu background tin nhắn
+                                                        borderTopRightRadius: 15,
+                                                    },
+                                                    left: {
+                                                        backgroundColor: '#e9e9e9', // màu background tin nhắn
+                                                        borderTopLeftRadius: 15,
+                                                    },
+                                                }}
+                                                textStyle={{
+                                                    right: {
+                                                        color: '#fff', // màu chữ tin nhắn
+                                                    },
+                                                }}
+                                                usernameStyle={{
+                                                    color: '#000000',
+                                                }}
+                                            >
+                                                <Text style={{ color: 'red', fontSize: 15, fontWeight: 'bold' }}>Tin nhắn đã bị thu hồi</Text>
+                                            </Bubble>
+                                        )
+                                    }
+                                    return (
+                                        <Bubble
+                                            {...props}
+                                            wrapperStyle={{
+                                                right: border ? {
+                                                    backgroundColor: '#2e64e5', // màu background tin nhắn
+                                                    borderTopRightRadius: 15,
+                                                } : {
+                                                    backgroundColor: '#2e64e5', // màu background tin nhắn
+                                                },
+                                                left: border ? {
+                                                    backgroundColor: '#e9e9e9', // màu background tin nhắn
+                                                    borderTopLeftRadius: 15,
+                                                } : {
+                                                    backgroundColor: '#e9e9e9', // màu background tin nhắn
+                                                },
+                                            }}
+                                            textStyle={{
+                                                right: {
+                                                    color: '#fff', // màu chữ tin nhắn
+                                                },
+                                            }}
+                                            usernameStyle={{
+                                                color: '#000000',
+                                            }}
+                                            onPress={(event) => {
+                                                var isUser = props.currentMessage.user && (props.currentMessage.user._id == this.state.user._id);
+                                                console.log("Press", isUser);
+                                                if (isUser) {
+                                                    Alert.alert(
+                                                        'Xác nhận',
+                                                        'Bạn có muốn thu hồi tin nhắn này không ?',
+                                                        [
+                                                            {
+                                                                text: 'Hủy',
+                                                                onPress: () => console.log('Cancel Pressed'),
+                                                                style: 'cancel',
+                                                            },
+                                                            {
+                                                                text: 'Chấp nhận',
+                                                                onPress: () => {
+                                                                    socketChat.emit("recall_message", {
+                                                                        messageId: props.currentMessage._id,
+                                                                    })
+                                                                },
+                                                            },
+                                                        ],
+                                                        { cancelable: false } // Disables tapping outside to dismiss the alert
+                                                    );
+                                                }
+                                            }}
+                                        ></Bubble>
+                                    )
+                                }}
                                 renderSend={this.renderSend}
                                 renderChatFooter={this.renderChatFooter}
                                 renderComposer={this.renderComposer}
                                 renderInputToolbar={this.renderInputToolbar}
                                 renderMessageVideo={this.renderMessageVideo}
                                 renderMessageImage={this.renderMessageImage}
-                                renderTicks={this.renderTicks}
-                                renderTime={this.renderTime}
+                                renderTicks={(currentMessage) => {
+                                    if (!currentMessage) {
+                                        return null;
+                                    }
+                                    // is user
+                                    var isUser = currentMessage.user && this.state && this.state.guest && (currentMessage.user._id == this.state.user._id);
+                                    return (
+                                        // currentMessage.received ? (
+                                        //     <Ionicons name="eye-outline" size={17} color={'white'} style={{ bottom: 2, right: 5 }} />
+                                        // ) : currentMessage.sent ? (
+                                        //     <Text
+                                        //         style={{
+                                        //             bottom: 5,
+                                        //             right: 5,
+                                        //             color: 'white'
+                                        //         }}
+                                        //     >✓</Text>
+                                        // ) : currentMessage.pending ? (
+                                        //     <MaterialIcons name="panorama-fish-eye" size={15} color={'white'} style={{ bottom: 2, right: 5 }} />
+                                        // ) : null
+                                        <Text
+                                            style={{
+                                                bottom: 5,
+                                                right: 5,
+                                                color: isUser ? 'white' : 'black',
+                                            }}
+                                        >✓</Text>
+                                    )
+                                }}
+                                renderTime={(props) => {
+                                    if (props.currentMessage && props.currentMessage.createdAt) {
+                                        let date = moment(props.currentMessage.createdAt).utcOffset('+0700').format("HH:mm"); // format theo múi giờ VN ( sau này có lẽ cần đổi )
+                                        // is user
+                                        var isUser = props.currentMessage.user && this.state && this.state.guest && (props.currentMessage.user._id == this.state.user._id);
+                                        return (
+                                            <Text style={{
+                                                fontSize: 10.5,
+                                                color: isUser ? 'white' : 'black',
+                                                marginHorizontal: 10,
+                                                marginBottom: 6,
+                                                bottom: 1,
+                                                letterSpacing: 0.3
+                                            }}>{date}</Text>
+                                        )
+                                    }
+                                    return null;
+                                }}
                                 renderDay={this.renderDay}
                                 placeholder='Gửi tin nhắn'
                                 renderUsernameOnMessage={true}
                                 showAvatarForEveryMessage={false}
                                 alwaysShowSend={true}
+                                renderSystemMessage={this.renderSystemMessage}
                             />
                         </View>
                     ) : null
@@ -936,6 +1118,36 @@ export default class ChatRoom extends Component {
                         </Modal>
                     ) : null
                 }
+                {/* {
+                    this.state.isOpen ? (
+                        <Modal
+                            visible={this.state.isOpen}
+                            transparent={true}
+                            onClose={() => {
+                                this.setState({ isOpen: false });
+                            }}>
+                            <View style={styles.bottomSheetContent}>
+                                <TouchableOpacity
+                                    style={{ flex: 1 }}
+                                    onPress={() => {
+                                        this.setState({ isOpen: false });
+                                    }}
+                                />
+                                <Button title="Thu hồi tin nhắn" onPress={() => {
+                                    if (this.state.recallMessage) {
+                                        socketChat.emit("recall_message", {
+                                            messageId: this.state.recallMessage,
+                                        })
+                                        this.setState({ isOpen: false });
+                                    }
+                                }} />
+                                <Button title="Huỷ" onPress={() => {
+                                    this.setState({ isOpen: false });
+                                }} />
+                            </View>
+                        </Modal>
+                    ) : null
+                } */}
             </ImageBackground >
         )
     }
@@ -970,5 +1182,10 @@ const styles = StyleSheet.create({
         width: '100%',
         fontSize: 13,
         color: 'gray'
-    }
+    },
+    bottomSheetContent: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.4)',
+        justifyContent: 'flex-end'
+    },
 })

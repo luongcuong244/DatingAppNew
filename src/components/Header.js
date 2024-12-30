@@ -14,17 +14,17 @@ export default Header = (props) => {
     return (
         <View style={styles.headerContainer} >
             <View style = {{width: 45, height: 45}}>
-                <Menu/>
+                <Menu {...props} />
             </View>
 
             <TouchableOpacity
                 activeOpacity={0.5}
-                style={styles.buttonShop}
+                // style={styles.buttonShop}
                 onPress={() => {
 
                 }}
             >
-                <ShopIcon width={30} height={30} />
+                {/* <ShopIcon width={30} height={30} /> */}
             </TouchableOpacity>
 
             {
@@ -40,7 +40,7 @@ export default Header = (props) => {
                     props.navigation.navigate("Setting");
                 }}
             >
-                <SettingIcon width={30} height={30} />
+                {/* <SettingIcon width={30} height={30} /> */}
             </TouchableOpacity>
         </View>
     )

@@ -10,6 +10,7 @@ import {
     ScrollView,
     Keyboard,
     Animated,
+    Alert,
 } from 'react-native';
 
 import { KeyboardAccessoryView } from 'react-native-keyboard-accessory'
@@ -18,6 +19,8 @@ import LabelOne from '../../assets/vectors/MatchLabel/labelOne.svg';
 import LabelTwo from '../../assets/vectors/MatchLabel/match.svg';
 import LabelHighlightOne from '../../assets/vectors/MatchLabel/half-match-thin.svg';
 import LabelHighlightTwo from '../../assets/vectors/MatchLabel/half-match-more-thin.svg';
+import ChatApi from '../api/Chat.api';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const WIDTH_SCREEN = Dimensions.get('window').width;
 const HEIGHT_SCREEN = Dimensions.get('window').height;
@@ -317,7 +320,23 @@ export default MatchAndChat = (props) => {
 
     const onSend = () => {
         if (message) {
-
+            AsyncStorage.getItem("user")
+                .then((user) => {
+                    ChatApi.addMessage({
+                        text: message,
+                        receiver: props.route.params.userId,
+                        sender: JSON.parse(user)._id,
+                        room: props.route.params.roomId,
+                        system: false,
+                    })
+                        .then(res => {
+                            props.navigation.goBack();
+                        })
+                        .catch(err => {
+                            console.log(err.response.data.mes);
+                            Alert.alert("Error", "Something went wrong. Please try again later.");
+                        });
+                });
         }
     }
 

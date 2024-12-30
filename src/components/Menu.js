@@ -10,8 +10,9 @@ import {
 
 import RateIcon from '../../assets/vectors/rate-icon.svg';
 import SignoutIcon from '../../assets/vectors/sign-out-icon.svg';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
-export default Menu = () => {
+export default Menu = (props) => {
 
     const stickAboveRotateAnim = useRef(new Animated.Value(0)).current;
     const stickBellowRotateAnim = useRef(new Animated.Value(0)).current;
@@ -178,7 +179,7 @@ export default Menu = () => {
                             }
                         ]}
                     >
-                        <TouchableOpacity
+                        {/* <TouchableOpacity
                             style={{ width: '100%' }}
                         >
                             <View style={styles.buttonItem} >
@@ -187,11 +188,17 @@ export default Menu = () => {
 
                                 <Text style={{ fontSize: 16, color: 'white', marginLeft: 15 }} >Đánh giá</Text>
                             </View>
-                        </TouchableOpacity>
+                        </TouchableOpacity> */}
 
 
                         <TouchableOpacity
                             style={{ width: '100%' }}
+                            onPress={() => {
+                                // clear token
+                                AsyncStorage.setItem('user', '');
+                                AsyncStorage.setItem('accessToken', '');
+                                props.navigation.navigate("LogIn");
+                            }}
                         >
                             <View style={styles.buttonItem} >
 

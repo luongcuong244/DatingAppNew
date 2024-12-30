@@ -41,9 +41,15 @@ export default ChatRow = React.forwardRef((props, ref) => {
 
     const formatTime = (time) => {
         const presentTime = new Date();
+
+        // Hàm để thêm số 0 vào trước số nếu nó chỉ có 1 chữ số
+        const padZero = (num) => num.toString().padStart(2, '0');
+
         // tin nhắn cùng ngày
         if (presentTime.getDate() === time.getDate() && presentTime.getMonth() === time.getMonth() && presentTime.getFullYear() === time.getFullYear()) {
-            return time.getHours() + ":" + time.getMinutes();
+            const hours = padZero(time.getHours());
+            const minutes = padZero(time.getMinutes());
+            return `${hours}:${minutes}`;
         }
 
         // tin nhắn cùng tuần
@@ -55,12 +61,12 @@ export default ChatRow = React.forwardRef((props, ref) => {
             return time.getDay() === 0 ? "CN" : "Th" + (time.getDay() + 1);
         }
 
-        return time.getDate() + " th " + time.getMonth();
+        return time.getDate() + " th " + (time.getMonth() + 1); // tháng bắt đầu từ 0 nên cần cộng thêm 1
     }
 
     const onClickChatRow = () => {
         props.navigation.navigate("ChatRoom", {
-            userId: props.userId,
+            userId: props.userID,
             userName: props.userName,
             avatar: props.avatar,
         });
@@ -184,7 +190,7 @@ export default ChatRow = React.forwardRef((props, ref) => {
                             <Text
                                 style={[
                                     styles.messageText,
-                                    props.isNewMessage ? { fontWeight: 'bold', color: 'white' } : { color: '#627B81' }
+                                    props.isNewMessage ? { fontWeight: 'bold', color: 'white' } : { color: '#95B5BD' }
                                 ]}
                                 numberOfLines={1}
                             >

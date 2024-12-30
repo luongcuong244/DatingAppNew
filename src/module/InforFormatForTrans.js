@@ -7,7 +7,7 @@ import {listCountrys} from '../data/Countrys';
 
 const Sample = [
     {
-        key: 'introductory',
+        key: 'introduce',
         title: "Giới thiệu đôi nét về bạn",
         value: "Tôi là Cường. Kết bạn ib mình làm quen nhé. I love you",
         icon: IntroductoryIcon,
@@ -20,7 +20,7 @@ const Sample = [
         }
     },
     {
-        key: 'userName',
+        key: 'name',
         title: "Tên",
         value: "Lương Cường",
         icon: IntroductoryIcon,
@@ -59,7 +59,7 @@ const Sample = [
         }
     },
     {
-        key: 'hobby',
+        key: 'hobbies',
         title: "Sở thích",
         value: ["Nghe nhạc", "Xem phim", "Thêm"],
         icon: HobbyIcon,
@@ -107,11 +107,11 @@ const Sample = [
 
 const formDataUser = {
     userId: null,
-    userName: null,
+    name: null,
     gender: null,
     address: null,
     age: null,
-    introductory: null,
+    introduce: null,
     avatar: null,
     listPhotos: [
         '',
@@ -123,7 +123,7 @@ const formDataUser = {
     ],
     dateOfBirth: null,
     hometown: null,
-    hobby: [],
+    hobbies: [],
     height: null,
     weight: null,
     verify: false,
@@ -137,7 +137,7 @@ const inforFormatForTrans = (user) => {
 
     let result = [...Sample]; // copy array
     return result.map((item) => {
-        if(item.key !== 'hobby'){
+        if(item.key !== 'hobbies'){
             item.value = user[item.key];
             item.format.attributeValue = user[item.key];
         }else{

@@ -35,10 +35,13 @@ export default class LogIn extends Component {
       password: passwordValue
     }).then((res) => {
       if (res.data.accessToken) {
-        AsyncStorage.setItem('user', JSON.stringify({}));
+        AsyncStorage.setItem('user', JSON.stringify(res.data.userInfo));
         AsyncStorage.setItem('accessToken', res.data.accessToken);
-        this.props.navigation.navigate("BasicInformation");
-        // dispatch(setUser(res.data.user));
+        if (res.data.userInfo.name) {
+          this.props.navigation.navigate("TabsManager");
+        } else {
+          this.props.navigation.navigate("BasicInformation");
+        }
       } else {
         Alert.alert("Something went wrong... Try later!")
       }
@@ -73,12 +76,12 @@ export default class LogIn extends Component {
             keyboardVerticalOffset={20}
             style={{ flex: 1, alignItems: 'center', flexDirection: 'column-reverse', marginBottom: 30, justifyContent: 'center' }}
           >
-            <TouchableOpacity
+            {/* <TouchableOpacity
               activeOpacity={0.7}
               onPress={this.onForgotPassword}
             >
               <Text style={styles.forgotPassword}>Quên mật khẩu</Text>
-            </TouchableOpacity>
+            </TouchableOpacity> */}
 
             <InputForm
               leftButtonLabel={"Đăng ký"}

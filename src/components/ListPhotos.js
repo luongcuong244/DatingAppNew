@@ -5,23 +5,16 @@ import PhotoIcon from '../../assets/vectors/photo-icon.svg';
 import ActionSheet from "@alessiocancian/react-native-actionsheet";
 import ImagePicker from "react-native-image-crop-picker";
 import DisplayImageFullScreen from "../components/DisplayImageFullScreen";
-import { listPhotos } from "../data/CurrentUser";
 
-export default ListPhotos = ({ userId }) => {
+export default ListPhotos = ({ data, onGetPhotos, isEditing }) => {
 
     const PhotoActionSheet = useRef();
-    const [data, setData] = useState([]);
     const [showImageFullScreen, setShowImageFullScreen] = useState(false);
     const [indexClick, setIndexClick] = useState();
     const [widthOfList, setWidthOfList] = useState(200);
 
-    useEffect(() => {
-        // get list photos base on userId
-        setData(listPhotos);
-    },[]);
-
     const showPhotoActionSheet = () => {
-        if(PhotoActionSheet.current){
+        if (PhotoActionSheet.current) {
             PhotoActionSheet.current.show();
         }
     }
@@ -35,9 +28,8 @@ export default ListPhotos = ({ userId }) => {
         })
             .then(image => {
                 let array = new Array(...data);
-                console.log(index);
-                array[index] = image.path;
-                setData(array);
+                array[index] = image;
+                onGetPhotos(array);
             })
             .catch(err => console.log(err))
     }
@@ -87,6 +79,7 @@ export default ListPhotos = ({ userId }) => {
                     data.map((path, index) => {
 
                         const onClickedPhoto = async () => {
+                            if (!isEditing) return;
                             await setIndexClick(index);
                             showPhotoActionSheet();
                         }

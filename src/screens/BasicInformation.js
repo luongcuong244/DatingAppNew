@@ -60,18 +60,6 @@ export default class BasicInformation extends Component {
         return newName;
     }
 
-    checkName() {
-        let reg = /^[A-Za-z\s\u00C0-\u1EF9\u0300-\u036f]+$/
-        // từ u00C0 đến u1EF9 : khoảng ký tự đặc biệt.
-        // từ u0300 đến u036f : khoảng dấu câu
-
-        // Nguồn: http://vietunicode.sourceforge.net/charset/
-
-        let name = this.state.name.trim();
-
-        return reg.test(name);
-    }
-
     checkDateOfBirth() {
 
         if (!this.state.dateOfBirth) return false;
@@ -92,7 +80,7 @@ export default class BasicInformation extends Component {
             return false;
         }
 
-        if (this.checkName() && this.state.country && this.state.city) {
+        if (this.state.name.trim() && this.state.country && this.state.city) {
             return true;
         }
 

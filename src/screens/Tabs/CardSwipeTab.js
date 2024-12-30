@@ -1,5 +1,5 @@
-import React, { useState, useRef } from "react";
-import { Dimensions, ImageBackground, StyleSheet, TextInput, TouchableOpacity, View, Text, Image, Modal } from "react-native";
+import React, { useState, useRef, useEffect } from "react";
+import { Dimensions, ImageBackground, StyleSheet, TextInput, TouchableOpacity, View, Text, Image, Modal, Alert } from "react-native";
 import { dataUserTest } from "../../DataTest";
 import SkipIcon from '../../../assets/vectors/CardSwipeScreen/skip-icon.svg';
 import RecoverIcon from '../../../assets/vectors/CardSwipeScreen/recover-icon.svg';
@@ -22,6 +22,7 @@ import {
     TapGestureHandler
 } from 'react-native-gesture-handler';
 import Filter from "../../components/Filter";
+import UserApi from "../../api/User.api";
 
 const WIDTH_SCREEN = Dimensions.get('window').width;
 
@@ -39,14 +40,14 @@ export default function CardSwipeTab(props) {
     const isMove = useRef(false);
     const isTakeBackCard = useRef(false);
 
-    const [data, setData] = useState(dataUserTest);
+    const [data, setData] = useState([]);
     const [userIndex, setUserIndex] = useState(0);
     const [currentImageIndex, setCurrentImageIndex] = useState(0);
     const [reload, setReload] = useState(false);
     const [imageLoaded, setImageLoaded] = useState(false);
     const [showFilter, setShowFilter] = useState(false);
 
-    const [isLoading, setIsLoading] = useState(false);
+    const [isLoading, setIsLoading] = useState(true);
 
     const cardAbove_TranslationX = useSharedValue(0);
     const cardAbove_TranslationY = useSharedValue(0);
@@ -76,8 +77,18 @@ export default function CardSwipeTab(props) {
     const recover_Opacity = useSharedValue(1);
     const recover_Rotate = useSharedValue('0deg');
 
-    const formatName = (user) => {
+    useEffect(() => {
+        UserApi.getAll()
+            .then((response) => {
+                setData(response.data.data);
+                setIsLoading(false);
+            })
+            .catch((error) => {
+                console.log("error: ", error);
+            })
+    }, []);
 
+    const formatName = (user) => {
         let userName = user.name;
         let arr = userName.split(' ');
         return arr[arr.length - 1].trim();
@@ -179,6 +190,7 @@ export default function CardSwipeTab(props) {
             props.navigation.navigate('UserProfile', {
                 likedMe: false,
                 isNavigate: true,
+                userInfo: data[userIndex],
             });
         }
 
@@ -328,11 +340,33 @@ export default function CardSwipeTab(props) {
     }
 
     const handleClickFavouriteIcon = () => {
+        if (data.length === 0) {
+            return;
+        }
         let index = userIndex; // lấy index trước khi chuyển sang thẻ khác
-        swipeCard();
-        props.navigation.navigate("MatchAndChat", {
-            listImages: data[index].listImages,
+        UserApi.addToListLike({
+            userIdToAdd: data[index].userID,
         })
+            .then((response) => {
+                console.log("response: ", response.data.data);
+                console.log("isMatched: ", response.data.data.listMatch.findIndex((id) => id == data[index].userID));
+                let isMatched = response.data.data.listMatch.findIndex((id) => id == data[index].userID) > -1 ? true : false;
+                let roomId = response.data.roomId;
+                if (isMatched) {
+                    props.navigation.navigate("MatchAndChat", {
+                        listImages: data[index].listImages,
+                        userId: route.params.userInfo._id,
+                        roomId,
+                    });
+                }
+            })
+            .catch((error) => {
+                console.log("error: ", error.response.data.mes);
+                Alert.alert("Thông báo", "Đã có lỗi xảy ra, vui lòng thử lại sau!");
+            })
+            .finally(() => {
+                swipeCard();
+            });
     }
 
     const onClickFavouriteIcon = useAnimatedGestureHandler({
@@ -412,6 +446,9 @@ export default function CardSwipeTab(props) {
     });
 
     const handleClickRecoverIcon = () => {
+        if (data.length === 0) {
+            return;
+        }
         takeBackCard();
     }
 
@@ -476,10 +513,10 @@ export default function CardSwipeTab(props) {
         setTimeout(() => {
 
             if (userIndex >= data.length - 1) {
-                dataUserTest[0].imageIndexDisplay = 0; // thực tế thì có thể xóa dòng này hoặc không
+                //dataUserTest[0].imageIndexDisplay = 0; // thực tế thì có thể xóa dòng này hoặc không
                 setUserIndex(0);
             } else {
-                dataUserTest[userIndex + 1].imageIndexDisplay = 0; // thực tế thì có thể xóa dòng này hoặc không
+                //dataUserTest[userIndex + 1].imageIndexDisplay = 0; // thực tế thì có thể xóa dòng này hoặc không
                 setUserIndex(userIndex + 1);
             }
             setCurrentImageIndex(0);
@@ -733,7 +770,7 @@ export default function CardSwipeTab(props) {
                 </View>
 
                 <View style={styles.buttonWrapper} >
-                    <View style={styles.buttonWrapperInner} >
+                    {/* <View style={styles.buttonWrapperInner} >
                         <TapGestureHandler onGestureEvent={onClickRecoverIcon} enabled={userIndex == 0 ? false : true}>
                             <Animated.View
                                 style={[
@@ -758,14 +795,14 @@ export default function CardSwipeTab(props) {
                             </Animated.View>
                         </TapGestureHandler>
 
-                    </View>
+                    </View> */}
 
                     <View style={styles.buttonWrapperInner} >
                         <TapGestureHandler onGestureEvent={onClickSkipIcon}>
                             <Animated.View
                                 style={[
                                     styles.itemRightButtons,
-                                    { borderColor: '#AEBCB9', marginRight: 15, },
+                                    { borderColor: '#AEBCB9', marginRight: 35, },
                                     uas_SkipIcon,
                                 ]}
                             >
@@ -801,7 +838,13 @@ export default function CardSwipeTab(props) {
 
     return (
         <View style={{ flex: 1, }} >
-            <WithHOC />
+            {
+                data.length > 0 ? <WithHOC /> : (
+                    <View style={{ width: '100%', height: '100%', justifyContent: 'center', alignItems: 'center', backgroundColor: '#00444E' }} >
+                        <Text style={{ color: 'white', fontSize: 20 }} >Không có thẻ nào</Text>
+                    </View>
+                )
+            }
         </View>
     )
 }
@@ -862,6 +905,8 @@ const styles = StyleSheet.create({
         height: '100%',
         flexDirection: 'row',
         alignItems: 'center',
+        flex: 1,
+        justifyContent: 'center',
     },
     itemLeftButtons: {
         justifyContent: 'center',

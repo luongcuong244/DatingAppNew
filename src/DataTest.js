@@ -206,7 +206,7 @@ const ChatListData = [
         message: "Cho anh làm quen nhé",
         time: new Date(2022, 2, 30, 21, 52, 30, 0),
         isNewMessage: false,
-        userIsActive: true,
+        userIsActive: true, // bỏ
         userIsSendMes: false,
         avatar: 'https://images.pexels.com/photos/1580274/pexels-photo-1580274.jpeg?auto=compress&cs=tinysrgb&dpr=1&w=500',
     },

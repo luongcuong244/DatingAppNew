@@ -7,7 +7,7 @@ import {
     Text
 } from 'react-native';
 
-export default SmallCard = ({ name, age, address, photo, widthFlatList = 200, onPress, isScroll, radius }) => {
+export default SmallCard = ({ userInfo, widthFlatList = 200, onPress, isScroll, radius }) => {
 
     const [positionX, setPositionX] = useState(0);
     const [positionY, setPositionY] = useState(0);
@@ -19,9 +19,9 @@ export default SmallCard = ({ name, age, address, photo, widthFlatList = 200, on
     const borderRadius = radius === 0 ? 0 : (13 * (widthFlatList / 2 - 30) / 130);
 
     const formatName = () => {
-        let userName = name;
+        let userName = userInfo.name;
         let arr = userName.split(' ');
-        return arr[arr.length - 1].trim() + ", " + age;
+        return arr[arr.length - 1].trim() + ", " + userInfo.age;
     }
 
     const setLayoutPosition = () => {
@@ -41,10 +41,14 @@ export default SmallCard = ({ name, age, address, photo, widthFlatList = 200, on
 
     const onPressCard = () => {
         onPress && onPress({
-            name: name,
-            age: age,
-            address: address,
-            photo: photo,
+            userInfo: {
+                ...userInfo,
+                listImages: userInfo.photos,
+            },
+            name: userInfo.name,
+            age: userInfo.age,
+            address: userInfo.address,
+            photo: userInfo.photo,
             widthFlatList: widthFlatList,
             positionX: positionX,
             positionY: positionY,
@@ -76,7 +80,7 @@ export default SmallCard = ({ name, age, address, photo, widthFlatList = 200, on
                         flexDirection: 'column-reverse'
                     }}
                     imageStyle={[styles.backgroundOfCard, { borderRadius: borderRadius }]}
-                    source={{ uri: photo }}
+                    source={{ uri: userInfo.photo }}
                 >
                     <View
                         style={[
@@ -88,7 +92,7 @@ export default SmallCard = ({ name, age, address, photo, widthFlatList = 200, on
                         ]}
                     >
                         <Text style={styles.nameLabel} numberOfLines={1} >{formatName()}</Text>
-                        <Text style={styles.addressLabel} numberOfLines={1} >{address}</Text>
+                        <Text style={styles.addressLabel} numberOfLines={1} >{userInfo.address}</Text>
                     </View>
                 </ImageBackground>
             </TouchableOpacity>

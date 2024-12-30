@@ -7,23 +7,22 @@ import {
     ImageBackground,
     Text,
     ScrollView,
+    Alert,
 } from "react-native";
 
 import { inforFiltering } from '../module/InforFiltering';
-import { currentUser } from "../data/CurrentUser";
 import ArrowIcon from '../../assets/vectors/arrow-left-ios.svg';
 import MaleIcon from '../../assets/vectors/male-icon.svg';
 import FemaleIcon from '../../assets/vectors/female-icon.svg';
 import TransgenderIcon from '../../assets/vectors/transgender-icon.svg';
-import { listPhotos } from "../data/CurrentUser";
+import UserApi from "../api/User.api";
 
 const WIDTH_SCREEN = Dimensions.get('window').width;
 const HEIGHT_SCREEN = Dimensions.get('window').height;
 
-export default function UserProfile({ navigation, onBack, route = { params: { likedMe: 'beLiked', isNavigate: false } } }) {
-
+export default function UserProfile({ navigation, onBack, route = { params: { likedMe, meLiked, isNavigate: false, userInfo: {}, onNavigateBack, showLikeButton: false } } }) {
     const isMove = useRef(false);
-    const [userInfor, setUserInfor] = useState(inforFiltering(currentUser));
+    const [userInfor, setUserInfor] = useState(inforFiltering(route.params.userInfo));
     const [indexOfPhoto, setIndexOfPhoto] = useState(0);
 
     const getFirstName = (name) => {
@@ -37,7 +36,7 @@ export default function UserProfile({ navigation, onBack, route = { params: { li
                 setIndexOfPhoto(indexOfPhoto - 1);
             }
         } else {
-            if (indexOfPhoto < (listPhotos.length - 1) && listPhotos[indexOfPhoto + 1]) {
+            if (indexOfPhoto < (route.params.userInfo.listImages.length - 1) && route.params.userInfo.listImages[indexOfPhoto + 1]) {
                 setIndexOfPhoto(indexOfPhoto + 1);
             }
         }
@@ -61,7 +60,7 @@ export default function UserProfile({ navigation, onBack, route = { params: { li
                 </TouchableOpacity>
 
                 <View style={styles.headerTitleWrapper} >
-                    <Text style={styles.headerTitle} >{`Hồ sơ của ${getFirstName(currentUser.userName)}`}</Text>
+                    <Text style={styles.headerTitle} >{`Hồ sơ của ${getFirstName(route.params.userInfo.name)}`}</Text>
                 </View>
             </View>
         )
@@ -87,7 +86,7 @@ export default function UserProfile({ navigation, onBack, route = { params: { li
         return (
             <ImageBackground
                 style={styles.photosUserContainer}
-                source={{ uri: listPhotos[indexOfPhoto] }}
+                source={{ uri: route.params.userInfo.listImages[indexOfPhoto] }}
             >
                 <View
                     style={{ flex: 1, width: '100%', backgroundColor: 'rgba(0,0,0,0.0001)' }}
@@ -98,7 +97,7 @@ export default function UserProfile({ navigation, onBack, route = { params: { li
 
                 <View style={styles.transferPhotosStyle} >
                     {
-                        listPhotos.map((item, index) => {
+                        route.params.userInfo.listImages.map((item, index) => {
 
                             if (!item) {
                                 return;
@@ -129,19 +128,24 @@ export default function UserProfile({ navigation, onBack, route = { params: { li
 
         let GenderIcon;
 
-        switch (currentUser.gender.normalize()) {
-            case "Nam".normalize(): {
+        switch (route.params.userInfo.gender) {
+            case "Male", "Nam": {
                 GenderIcon = MaleIcon;
                 break;
             }
 
-            case "Nữ".normalize(): {
+            case "Female", "Nữ": {
                 GenderIcon = FemaleIcon;
                 break;
             }
 
-            case "LGBT".normalize(): {
+            case "Transgender", "LGBT": {
                 GenderIcon = TransgenderIcon;
+                break;
+            }
+
+            default: {
+                GenderIcon = MaleIcon;
                 break;
             }
         }
@@ -149,8 +153,8 @@ export default function UserProfile({ navigation, onBack, route = { params: { li
         return (
             <View style={styles.basicInforContainer} >
                 <View>
-                    <Text style={styles.nameAndAgeLabel} >{currentUser.userName + ", " + currentUser.age}</Text>
-                    <Text style={styles.addressLabel} >{currentUser.address}</Text>
+                    <Text style={styles.nameAndAgeLabel} >{route.params.userInfo.name + ", " + route.params.userInfo.age}</Text>
+                    <Text style={styles.addressLabel} >{route.params.userInfo.address}</Text>
                 </View>
 
                 <GenderIcon
@@ -189,7 +193,7 @@ export default function UserProfile({ navigation, onBack, route = { params: { li
                             },
                         ]}
                     >
-                        {currentUser.introductory}
+                        {route.params.userInfo.introductory}
                     </Text>
                 </View>
             </View>
@@ -201,7 +205,7 @@ export default function UserProfile({ navigation, onBack, route = { params: { li
             <View
                 style={styles.inforWrapper}
             >
-                <Text style={styles.textHeaderStyle} >{`Thêm về ${currentUser.userName}`}</Text>
+                <Text style={styles.textHeaderStyle} >{`Thêm về ${route.params.userInfo.name}`}</Text>
 
                 {
                     userInfor.map((item, index) => {
@@ -225,7 +229,7 @@ export default function UserProfile({ navigation, onBack, route = { params: { li
                                 <Text style={styles.styleOfLabelText} >{item.title}</Text>
 
                                 {
-                                    item.key === 'hobby' ? (
+                                    item.key === 'hobbies' ? (
                                         <View style={{ flex: 1, flexWrap: 'wrap', flexDirection: 'row', marginHorizontal: 15 }} >
                                             {
                                                 item.value.map((hobby, indexOfHobby) => {
@@ -261,11 +265,31 @@ export default function UserProfile({ navigation, onBack, route = { params: { li
     const LikedMe = () => {
 
         const handleMatchAndChat = () => {
-            navigation.navigate("MatchAndChat", {
-                listImages: listPhotos,
+            UserApi.addToListLike({
+                userIdToAdd: route.params.userInfo._id,
             })
+                .then((response) => {
+                    console.log("response: ", response.data);
+                    let isMatched = response.data.data.listMatch.findIndex((id) => id == route.params.userInfo._id) > -1 ? true : false;
+                    let roomId = response.data.roomId;
+                    if (isMatched) {
+                        route.params.onNavigateBack && route.params.onNavigateBack();
+                        navigation.goBack();
+                        navigation.navigate("MatchAndChat", {
+                            listImages: route.params.userInfo.photos,
+                            userId: route.params.userInfo._id,
+                            roomId,
+                        });
+                    } else {
+                        Alert.alert("Thông báo", "Đã thiết lập mối quan hệ thành công");
+                    }
+                })
+                .catch((error) => {
+                    console.log("error: ", error.response.data.mes);
+                    Alert.alert("Thông báo", "Đã có lỗi xảy ra, vui lòng thử lại sau!");
+                });
         }
-        
+
         const handleDelete = () => {
 
         }
@@ -273,7 +297,7 @@ export default function UserProfile({ navigation, onBack, route = { params: { li
         return (
             <View>
                 <Text style={styles.likedMeLabel} >
-                    {`${getFirstName(currentUser.userName)} đã thích bạn`}
+                    {`${getFirstName(route.params.userInfo.name)} đã thích bạn`}
                 </Text>
                 <TouchableOpacity
                     activeOpacity={0.8}
@@ -293,7 +317,7 @@ export default function UserProfile({ navigation, onBack, route = { params: { li
                     </Text>
                 </TouchableOpacity>
 
-                <TouchableOpacity
+                {/* <TouchableOpacity
                     activeOpacity={0.8}
                     style={[
                         styles.likedMeButtonStyle,
@@ -311,6 +335,48 @@ export default function UserProfile({ navigation, onBack, route = { params: { li
                     >
                         Xóa khỏi danh sách "Đã thích bạn"
                     </Text>
+                </TouchableOpacity> */}
+            </View>
+        )
+    }
+
+    const MeLiked = () => {
+        const handleDelete = () => {
+            UserApi.removeFromListLike(route.params.userInfo._id)
+                .then(() => {
+                    route.params.onNavigateBack && route.params.onNavigateBack();
+                    navigation.goBack();
+                })
+                .catch((err) => {
+                    console.log(err);
+                    Alert.alert("Lỗi", "Xóa không thành công");
+                })
+        }
+
+        return (
+            <View>
+                <Text style={styles.likedMeLabel} >
+                    {`Bạn đã thích ${getFirstName(route.params.userInfo.name)}`}
+                </Text>
+
+                <TouchableOpacity
+                    activeOpacity={0.8}
+                    style={[
+                        styles.likedMeButtonStyle,
+                        {
+                            paddingHorizontal: 40,
+                            backgroundColor: 'rgba(154,154,154,0.13)',
+                            borderColor: '#9A9A9A',
+                            marginTop: 20,
+                        }
+                    ]}
+                    onPress={handleDelete}
+                >
+                    <Text
+                        style={{ fontSize: 14, color: '#9A9A9A' }}
+                    >
+                        Xóa khỏi danh sách "Bạn đã thích"
+                    </Text>
                 </TouchableOpacity>
             </View>
         )
@@ -327,7 +393,7 @@ export default function UserProfile({ navigation, onBack, route = { params: { li
                 <BasicInfor />
 
                 {
-                    currentUser.introductory && (
+                    route.params.userInfo.introductory && (
                         <Introductory />
                     )
                 }
@@ -337,6 +403,46 @@ export default function UserProfile({ navigation, onBack, route = { params: { li
                 {
                     route.params.likedMe && (
                         <LikedMe />
+                    )
+                }
+                {
+                    route.params.meLiked && (
+                        <MeLiked />
+                    )
+                }
+                {
+                    route.params.showLikeButton && (
+                        <TouchableOpacity
+                            onPress={() => {
+                                UserApi.addToListLike({
+                                    userIdToAdd: route.params.userInfo._id,
+                                })
+                                    .then((response) => {
+                                        route.params.onNavigateBack && route.params.onNavigateBack();
+                                        navigation.goBack();
+                                    })
+                                    .catch((err) => {
+                                        console.log(err);
+                                        Alert.alert("Lỗi", "Thích không thành công");
+                                    })
+                            }}
+                            activeOpacity={0.8}
+                            style={[
+                                styles.likedMeButtonStyle,
+                                {
+                                    paddingHorizontal: 40,
+                                    backgroundColor: '#00ACB7',
+                                    borderColor: 'white',
+                                    marginTop: 20,
+                                }
+                            ]}
+                        >
+                            <Text
+                                style={{ fontSize: 17, fontWeight: '500', color: 'white', letterSpacing: 1 }}
+                            >
+                                Thích
+                            </Text>
+                        </TouchableOpacity>
                     )
                 }
             </ScrollView>

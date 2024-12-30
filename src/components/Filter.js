@@ -144,7 +144,7 @@ export default function Filter({ minValue = 18, maxValue = 80, setShowFilterModa
                 </View>
 
                 {
-                    isFilterByDistance == false && (
+                    true == false && (
                         <ScrollView
                             horizontal={true}
                         >

@@ -6,7 +6,7 @@ import {
     TouchableOpacity,
     Modal,
     FlatList,
-    Dimensions,
+    Alert,
 } from 'react-native';
 
 import Animated, {
@@ -28,14 +28,10 @@ import FilterIcon from '../../../assets/vectors/filter-icon.svg';
 import Filter from '../../components/Filter';
 import LikedIcon from '../../../assets/vectors/liked.svg';
 import BeLikedIcon from '../../../assets/vectors/favourite.svg';
-import { ListUsersLikedByMe, ListUsersLikedMe } from '../../DataTest';
 
 import SmallCard from '../../components/SmallCard';
-import UserProfile from '../UserProfile';
-import MaskedView from '@react-native-masked-view/masked-view';
-
-const WIDTH_SCREEN = Dimensions.get('window').width;
-const HEIGHT_SCREEN = Dimensions.get('window').height;
+import UserApi from '../../api/User.api';
+import { useFocusEffect } from '@react-navigation/native';
 
 export default function FavouriteTab(props) {
 
@@ -59,54 +55,59 @@ export default function FavouriteTab(props) {
     const likedOption_BorderRadius = useSharedValue(10);
     const likeOption_BorderWidth = useSharedValue(0);
 
-    const [isShowModal, setShowModal] = useState(false);
-    const [cloneCard, setCloneCard] = useState();
-
-    const translationX = useSharedValue(0);
-    const translationY = useSharedValue(0);
-    const scaleX = useSharedValue(1);
-    const scaleY = useSharedValue(1);
-    const opacity = useSharedValue(1);
-
     const borderRadius = useSharedValue();
-
-    const translationX_UserProfile = useSharedValue(0);
-    const translationY_UserProfile = useSharedValue(0);
-    const scaleX_UserProfile = useSharedValue(1);
-    const scaleY_UserProfile = useSharedValue(1);
-    const opacity_UserProfile = useSharedValue(1);
 
     const setShowFilterModal = (isShow) => {
         setShowFilter(isShow);
     }
 
-    useEffect(() => {
-        loadDataFromServer('beLiked');
-    }, [])
+    // useEffect(() => {
+    //     loadDataFromServer('beLiked');
+    // }, [])
+
+    useFocusEffect(
+        React.useCallback(() => {
+            if (beLikeOption_BorderWidth.value == 0) {
+                runOnJS(handleClickLiked)();
+            } else {
+                runOnJS(handleClickBeLiked)();
+            }
+        }, [])
+    )
 
     const loadDataFromServer = (optionSelecting) => {
-
         setIsLoading(true);
-
         switch (optionSelecting) {
             case "liked": {
                 setHeaderTitle("Tôi đã thích ( ? )");
-
-                setTimeout(() => {
-                    setHeaderTitle("Tôi đã thích ( " + ListUsersLikedByMe.length + " )");
-                    setData(ListUsersLikedByMe);
-                    setIsLoading(false);
-                }, 1000);
+                UserApi.getAllUserInListLike()
+                    .then((res) => {
+                        let data = res.data.data;
+                        setHeaderTitle("Tôi đã thích ( " + data.length + " )");
+                        setData(data);
+                        setIsLoading(false);
+                        console.log(data);
+                    })
+                    .catch((err) => {
+                        console.log(err);
+                        Alert.alert("Error", "Something went wrong!");
+                    });
                 break;
             }
             case "beLiked": {
                 setHeaderTitle("Đã thích tôi ( ? )");
-
-                setTimeout(() => {
-                    setHeaderTitle("Đã thích tôi ( " + ListUsersLikedMe.length + " )");
-                    setData(ListUsersLikedMe);
-                    setIsLoading(false);
-                }, 2000);
+                UserApi.getAllUserLikeMe()
+                    .then((res) => {
+                        let data = res.data.data;
+                        setHeaderTitle("Đã thích tôi ( " + data.length + " )");
+                        setData(data);
+                        setIsLoading(false);
+                        console.log(data);
+                    })
+                    .catch((err) => {
+                        console.log(err);
+                        Alert.alert("Error", "Something went wrong!");
+                    });
                 break;
             }
         }
@@ -170,134 +171,17 @@ export default function FavouriteTab(props) {
         }
     });
 
-    // const uas_Mask = useAnimatedStyle(() => {
-    //     return {
-    //         borderRadius: (borderRadius.value / scaleX_UserProfile.value) * 2 || 0,
-    //         transform: [
-    //             {
-    //                 translateX: translationX.value,
-    //             },
-    //             {
-    //                 translateY: translationY.value,
-    //             },
-    //             {
-    //                 scaleX: scaleX_UserProfile.value,
-    //             },
-    //             {
-    //                 scaleY: scaleY_UserProfile.value,
-    //             }
-    //         ]
-    //     }
-    // })
-
-    const uas_SwitchScreen = useAnimatedStyle(() => {
-        return {
-            opacity: opacity.value,
-            transform: [
-                {
-                    translateX: translationX.value,
-                },
-                {
-                    translateY: translationY.value, // 45 là chiều cao của Header
-                },
-                {
-                    scaleX: scaleX.value,
-                },
-                {
-                    scaleY: scaleY.value,
-                }
-            ]
-        }
-    })
-
-    const uas_UserProfile = useAnimatedStyle(() => {
-        return {
-            opacity: opacity_UserProfile.value,
-            transform: [
-                {
-                    translateX: translationX_UserProfile.value,
-                },
-                {
-                    translateY: translationY_UserProfile.value,
-                },
-                {
-                    scaleX: scaleX_UserProfile.value,
-                },
-                {
-                    scaleY: scaleY_UserProfile.value,
-                }
-            ]
-        }
-    })
-
     const onPressCard = async (cloneCard) => {
-        translationX.value = cloneCard.positionX - (WIDTH_SCREEN - cloneCard.width) / 2;
-        translationY.value = cloneCard.positionY - (HEIGHT_SCREEN - 45 - cloneCard.height) / 2 - 45 / 2;  // 45 là chiều cao của Header
-        scaleX.value = 1;
-        scaleY.value = 1;
-        opacity.value = 1;
-
-        translationX_UserProfile.value = cloneCard.positionX - (WIDTH_SCREEN - cloneCard.width) / 2;
-        translationY_UserProfile.value = cloneCard.positionY - (HEIGHT_SCREEN - 45 - cloneCard.height) / 2 - 45 / 4;  // 45 là chiều cao của Header
-        scaleX_UserProfile.value = (cloneCard.width - 20) / WIDTH_SCREEN;
-        scaleY_UserProfile.value = ((cloneCard.width - 20) * 1.5) / (HEIGHT_SCREEN - 24);
-        opacity_UserProfile.value = 0;
-
-        borderRadius.value = cloneCard.borderRadius;
-
-        await setCloneCard(cloneCard);
-        await setShowModal(true);
-
-        scaleX_UserProfile.value = withTiming(1, { duration: animDuration });
-        scaleY_UserProfile.value = withTiming(1, { duration: animDuration });
-        translationX_UserProfile.value = withTiming(0, { duration: animDuration });
-        translationY_UserProfile.value = withTiming(0, { duration: animDuration });
-        opacity_UserProfile.value = withTiming(1, { duration: animDuration });
-
-        borderRadius.value = withTiming(0, { duration: animDuration });
-
-        translationX.value = withTiming(0, { duration: animDuration });
-        translationY.value = withTiming(0, { duration: animDuration });
-        scaleX.value = withTiming(WIDTH_SCREEN / (cloneCard.width - 30), { duration: animDuration });
-        scaleY.value = withTiming(HEIGHT_SCREEN / (cloneCard.height - 30), { duration: animDuration });
-        opacity.value = withTiming(0, { duration: animDuration });
+        props.navigation.navigate('UserProfile', {
+            isNavigate: true,
+            likedMe: optionSelecting == 'beLiked' ? true : false,
+            meLiked: optionSelecting == 'liked' ? true : false,
+            userInfo: cloneCard.userInfo,
+            onNavigateBack: () => {
+                loadDataFromServer(optionSelecting);
+            }
+        });
     }
-
-    const onBack = async () => {
-
-        translationX.value = withTiming(cloneCard.positionX - (WIDTH_SCREEN - cloneCard.width) / 2, { duration: animDuration });
-        translationY.value = withTiming(cloneCard.positionY - (HEIGHT_SCREEN - 45 - cloneCard.height) / 2 - 45 / 2, { duration: animDuration });  // 45 là chiều cao của Header
-        scaleX.value = withTiming(1, { duration: animDuration });
-        scaleY.value = withTiming(1, { duration: animDuration });
-        opacity.value = withTiming(1, { duration: animDuration });
-
-        borderRadius.value = withTiming(cloneCard.borderRadius, { duration: animDuration });
-
-        translationX_UserProfile.value = withTiming(cloneCard.positionX - (WIDTH_SCREEN - cloneCard.width) / 2, { duration: animDuration });
-        translationY_UserProfile.value = withTiming(cloneCard.positionY - (HEIGHT_SCREEN - 45 - cloneCard.height) / 2 - 45 / 2, { duration: animDuration });  // 45 là chiều cao của Header
-        scaleX_UserProfile.value = withTiming((cloneCard.width - 20) / WIDTH_SCREEN, { duration: animDuration });
-        scaleY_UserProfile.value = withTiming(((cloneCard.width - 20) * 1.5) / (HEIGHT_SCREEN - 24), { duration: animDuration });
-        opacity_UserProfile.value = withTiming(0, { duration: animDuration });
-
-        setTimeout(() => {
-            setShowModal(false);
-            setCloneCard(null);
-        }, animDuration);
-    }
-
-    // const setRefList = (ref) => {
-    //     refList.current = ref;
-    // }
-
-    // const onScrollToIndex = (itemIndex) => {
-    //     if (refList.current) {
-    //         refList.current.scrollToIndex({
-    //             index: Math.floor(itemIndex / 2), // chia 2 vì có 2 cột
-    //             viewPosition: 0.5,
-    //             animated: false
-    //         })
-    //     }
-    // }
 
     const onClickFilterIcon = () => {
         setShowFilterModal(true);
@@ -319,19 +203,16 @@ export default function FavouriteTab(props) {
     }
 
     const renderItem = (item) => {
-
         if (widthFlatList <= 0) {
             return null;
         }
-
         return (
             <SmallCard
-                {...item.item}
+                userInfo={item.item}
                 //index={item.index}
                 widthFlatList={widthFlatList}
                 isScroll={isScroll}
                 onPress={onPressCard}
-            //onScrollToIndex={onScrollToIndex}
             />
         )
     }
@@ -347,7 +228,7 @@ export default function FavouriteTab(props) {
                             uas_BeLiked
                         ]}
                     >
-                        <BeLikedIcon height={25} width={25} style={{ color: optionSelecting === "beLiked" ? '#F779A2' : '#588289' }} />
+                        <BeLikedIcon height={25} width={25} />
                     </Animated.View>
                 </TapGestureHandler>
 
@@ -358,7 +239,7 @@ export default function FavouriteTab(props) {
                             uas_Liked
                         ]}
                     >
-                        <LikedIcon height={25} width={25} style={{ color: optionSelecting === "liked" ? '#F779A2' : '#588289' }} />
+                        <LikedIcon height={25} width={25} />
                     </Animated.View>
                 </TapGestureHandler>
             </View>
@@ -383,7 +264,7 @@ export default function FavouriteTab(props) {
                                 thickness={2}
                             />
                         </View>
-                    ) : (
+                    ) : data.length > 0 ? (
                         <FlatList
                             data={data}
                             onLayout={onLayouFlatlist}
@@ -394,6 +275,10 @@ export default function FavouriteTab(props) {
                             //ref={setRefList}
                             renderItem={renderItem}
                         />
+                    ) : (
+                        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }} >
+                            <Text style={{ color: 'white' }} >Không có dữ liệu</Text>
+                        </View>
                     )
                 }
             </View>
@@ -404,60 +289,6 @@ export default function FavouriteTab(props) {
                 transparent={true}
             >
                 <Filter setShowFilterModal={setShowFilterModal} />
-            </Modal>
-
-            <Modal
-                transparent
-                visible={isShowModal}
-            >
-                {/* <MaskedView
-                    style={StyleSheet.absoluteFill}
-                    androidRenderingMode='software' // this line can enable anim in maskElement but reduce performance ( https://github.com/react-native-masked-view/masked-view/pull/127 )
-                    maskElement={
-                        <Animated.View
-                            style={[
-                                {
-                                    ...StyleSheet.absoluteFillObject,
-                                    backgroundColor: "black",
-                                    width: undefined,
-                                    height: undefined,
-                                },
-                                uas_Mask
-                            ]}
-                        ></Animated.View>
-                    }
-                >
-                    
-                </MaskedView> */}
-                {
-                    cloneCard && (
-                        <Animated.View
-                            style={[{
-                                position: 'absolute',
-                                top: 0,
-                                bottom: 0,
-                                left: 0,
-                                right: 0,
-                                justifyContent: 'center',
-                                alignItems: 'center',
-                            }, uas_SwitchScreen]}
-                        >
-                            <SmallCard
-                                {...cloneCard}
-                            //radius={0}
-                            />
-                        </Animated.View>
-                    )
-                }
-
-                <Animated.View
-                    style={[{ position: 'absolute', top: 0, bottom: 0, left: 0, right: 0 }, uas_UserProfile]}
-                >
-                    <UserProfile
-                        navigation={props.navigation}
-                        onBack={onBack}
-                    ></UserProfile>
-                </Animated.View>
             </Modal>
         </View>
     )
