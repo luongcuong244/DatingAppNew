@@ -8,10 +8,13 @@ import {
   Dimensions,
   Alert
 } from "react-native";
-import Text from '../components/AppText';
 import InputForm from "../components/InputForm";
 import AuthApi from "../api/Auth.api";
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import DeviceInfo from 'react-native-device-info';
+import socketChat from '../socket/socket.config';
+import Geolocation from '@react-native-community/geolocation';
+import { request, PERMISSIONS } from 'react-native-permissions';
 
 const HEIGHT_SCREEN = Dimensions.get("window").height;
 
@@ -29,24 +32,67 @@ export default class LogIn extends Component {
     this.props.navigation.navigate("EnterAddress");
   }
 
-  onPressRightButton = (address, addressType, passwordValue, reenterPasswordValue) => {
-    AuthApi.signIn({
-      mobile: address,
-      password: passwordValue
-    }).then((res) => {
-      if (res.data.accessToken) {
-        AsyncStorage.setItem('user', JSON.stringify(res.data.userInfo));
-        AsyncStorage.setItem('accessToken', res.data.accessToken);
-        if (res.data.userInfo.name) {
-          this.props.navigation.navigate("TabsManager");
+  onPressRightButton = async (address, addressType, passwordValue, reenterPasswordValue) => {
+    DeviceInfo.getUniqueId().then(uniqueId => {
+      AuthApi.signIn({
+        mobile: address,
+        password: passwordValue,
+        deviceId: uniqueId,
+      }).then(async (res) => {
+        if (res.data.accessToken) {
+          AsyncStorage.setItem('user', JSON.stringify(res.data.userInfo));
+          AsyncStorage.setItem('accessToken', res.data.accessToken);
+          if (res.data.userInfo.name) {
+            this.props.navigation.navigate("TabsManager");
+          } else {
+            this.props.navigation.navigate("BasicInformation");
+          }
+          console.log('Login successfully');
+          var deviceName = "Unknown";
+          try {
+            deviceName = await DeviceInfo.getDeviceName();
+          } catch (error) {
+            console.error('Failed to get device name:', error);
+          }
+          console.log('Device name:', deviceName);
+          var address = "Unknown";
+          await request(PERMISSIONS.ANDROID.ACCESS_FINE_LOCATION);
+          Geolocation.getCurrentPosition(
+            async position => {
+              try {
+                console.log('Position:', position);
+                const { latitude, longitude } = position.coords;
+                const response = await fetch(`https://rsapi.goong.io/Geocode?latlng=${latitude},${longitude}&api_key=crMmofRW2lgZNiDMZtCUdYqHZfGZv1cVZ864e0CR`);
+                const data = await response.json();
+                address = data.results[0].formatted_address;
+                console.log('Address:', address);
+              } catch (error) {
+                console.error('Failed to get address:', error);
+              }
+              socketChat.emit('registerSession', {
+                userId: res.data.userInfo._id,
+                deviceId: uniqueId,
+                deviceName: deviceName,
+                address: address,
+              });
+            },
+            error => {
+              console.log('Failed to get location:', error);
+              socketChat.emit('registerSession', {
+                userId: res.data.userInfo._id,
+                deviceId: uniqueId,
+                deviceName: deviceName,
+                address: address,
+              });
+            },
+            { enableHighAccuracy: true, timeout: 20000, maximumAge: 0 },
+          );
         } else {
-          this.props.navigation.navigate("BasicInformation");
+          Alert.alert("Something went wrong... Try later!")
         }
-      } else {
-        Alert.alert("Something went wrong... Try later!")
-      }
-    }).catch(err => {
-      Alert.alert(null, err.response.data.mes);
+      }).catch(err => {
+        Alert.alert(null, err.response.data.mes);
+      });
     });
   }
 
@@ -76,12 +122,12 @@ export default class LogIn extends Component {
             keyboardVerticalOffset={20}
             style={{ flex: 1, alignItems: 'center', flexDirection: 'column-reverse', marginBottom: 30, justifyContent: 'center' }}
           >
-            <TouchableOpacity
+            {/* <TouchableOpacity
               activeOpacity={0.7}
               onPress={this.onForgotPassword}
             >
               <Text style={styles.forgotPassword}>Quên mật khẩu</Text>
-            </TouchableOpacity>
+            </TouchableOpacity> */}
 
             <InputForm
               leftButtonLabel={"Đăng ký"}

@@ -17,24 +17,16 @@ const HEIGHT_SCREEN = Dimensions.get("window").height;
 export default LogUp = ({ navigation }) => {
 
     const onPressRightButton = (address, addressType, passwordValue, reenterPasswordValue) => {
-        // navigation.navigate("Verification",{
-        //     addressType: addressType,
-        //     address: address,
-        //     password: passwordValue,
-        //     reenterPasswordValue: reenterPasswordValue,
-        //     purpose: 'log_up'
-        // });
         if (passwordValue !== reenterPasswordValue) {
             Alert.alert(null, "Mật khẩu nhập lại không khớp !");
             return;
         }
-        AuthApi.signUp({
-            mobile: address,
-            password: passwordValue
-        }).then((res) => {
-            onPressLeftButton();
-        }).catch(err => {
-            Alert.alert(null, err.response.data.mes);
+        navigation.navigate("Verification", {
+            addressType: addressType,
+            address: address,
+            password: passwordValue,
+            reenterPasswordValue: reenterPasswordValue,
+            purpose: 'log_up'
         });
     }
 

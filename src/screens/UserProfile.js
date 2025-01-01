@@ -20,12 +20,13 @@ import UserApi from "../api/User.api";
 const WIDTH_SCREEN = Dimensions.get('window').width;
 const HEIGHT_SCREEN = Dimensions.get('window').height;
 
-export default function UserProfile({ navigation, onBack, route = { params: { likedMe, meLiked, isNavigate: false, userInfo: {}, onNavigateBack, showLikeButton: false } } }) {
+export default function UserProfile({ navigation, onBack, route = { params: { likedMe, meLiked, isNavigate: false, userInfo: {}, onNavigateBack, showLikeButton: false, showBlockButton: false } } }) {
     const isMove = useRef(false);
     const [userInfor, setUserInfor] = useState(inforFiltering(route.params.userInfo));
     const [indexOfPhoto, setIndexOfPhoto] = useState(0);
 
     const getFirstName = (name) => {
+        console.log("name: ", name);
         let arr = name.split(' ');
         return arr[arr.length - 1];
     }
@@ -441,6 +442,41 @@ export default function UserProfile({ navigation, onBack, route = { params: { li
                                 style={{ fontSize: 17, fontWeight: '500', color: 'white', letterSpacing: 1 }}
                             >
                                 Thích
+                            </Text>
+                        </TouchableOpacity>
+                    )
+                }
+                {
+                    route.params.showBlockButton && (
+                        <TouchableOpacity
+                            onPress={() => {
+                                // UserApi.addToListLike({
+                                //     userIdToAdd: route.params.userInfo._id,
+                                // })
+                                //     .then((response) => {
+                                //         route.params.onNavigateBack && route.params.onNavigateBack();
+                                //         navigation.goBack();
+                                //     })
+                                //     .catch((err) => {
+                                //         console.log(err);
+                                //         Alert.alert("Lỗi", "Thích không thành công");
+                                //     })
+                            }}
+                            activeOpacity={0.8}
+                            style={[
+                                styles.likedMeButtonStyle,
+                                {
+                                    paddingHorizontal: 40,
+                                    backgroundColor: '#00ACB7',
+                                    borderColor: 'white',
+                                    marginTop: 20,
+                                }
+                            ]}
+                        >
+                            <Text
+                                style={{ fontSize: 17, fontWeight: '500', color: 'white', letterSpacing: 1 }}
+                            >
+                                Chặn người này
                             </Text>
                         </TouchableOpacity>
                     )

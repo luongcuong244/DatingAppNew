@@ -16,6 +16,7 @@ import DisplayImageFullScreen from '../components/DisplayImageFullScreen';
 import socketChat from '../socket/socket.config';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import BottomSheet from 'react-native-simple-bottom-sheet';
+import UserApi from "../api/User.api";
 
 LogBox.ignoreLogs(['Animated.event now requires a second argument for options']);
 
@@ -856,12 +857,25 @@ export default class ChatRoom extends Component {
     }
 
     showProfile() {
-        // console.log("Show profile", this.state.guest);
-        // this.props.navigation.navigate("UserProfile", {
-        //     likedMe: false,
-        //     isNavigate: true,
-        //     userInfo: this.state.guest,
-        // });
+        console.log("Show profile", this.state.guest);
+        UserApi.getUserInfo({
+            userId: this.state.guest._id,
+        })
+            .then(res => {
+                this.props.navigation.navigate("UserProfile", {
+                    likedMe: false,
+                    isNavigate: true,
+                    showBlockButton: true,
+                    userInfo: {
+                        ...res.data.data,
+                        listImages: res.data.data.photos,
+                        age: new Date().getFullYear() - new Date(res.data.data.dateOfBirth).getFullYear(),
+                    },
+                });
+            })
+            .catch(err => {
+                console.log(err.response.data.mes);
+            })
     }
 
     onBackVideoPlayer() {

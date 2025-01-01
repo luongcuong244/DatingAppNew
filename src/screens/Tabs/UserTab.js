@@ -23,6 +23,7 @@ import { currentUser } from '../../data/CurrentUser';
 import { inforFormatForTrans } from "../../module/InforFormatForTrans";
 import UserApi from '../../api/User.api';
 import { string } from 'prop-types';
+import DeviceInfo from 'react-native-device-info';
 
 const WIDTH_SCREEN = Dimensions.get('window').width;
 
@@ -43,9 +44,12 @@ export default function CardSwipeTab({ navigation }) {
         fetchUserInfo();
     }, [])
 
-    const fetchUserInfo = () => {
+    const fetchUserInfo = async () => {
         setIsLoading(true);
-        UserApi.getCurrentInfo().then((response) => {
+        const deviceUniqueId = await DeviceInfo.getUniqueId();
+        UserApi.getCurrentInfo({
+            deviceId: deviceUniqueId,
+        }).then((response) => {
             setUser({
                 ...response.data.data,
                 dateOfBirth: new Date(response.data.data.dateOfBirth),

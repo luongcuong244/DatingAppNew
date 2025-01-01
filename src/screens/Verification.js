@@ -13,6 +13,7 @@ import {
     KeyboardAvoidingView
 } from "react-native";
 import auth from '@react-native-firebase/auth';
+import AuthApi from "../api/Auth.api";
 
 const HEIGHT_SCREEN = Dimensions.get('window').height;
 
@@ -56,24 +57,38 @@ export default class Verification extends Component {
         return phoneNumber;
     };
 
-    componentDidMount() {
+    setupConfirmation() {
         console.log("componentDidMount");
         const phoneNumber = this.toE164Format(this.props.route.params.address);
         console.log("phoneNumber", phoneNumber);
         auth().signOut();
-        setTimeout(() => {
-            auth().signInWithPhoneNumber(phoneNumber)
-                .then(confirm => {
-                    // save confirm to state
-                    console.log("set confirm");
-                    this.setState({
-                        confirm: confirm
-                    });
-                })
-                .catch(error => {
-                    Alert.alert(error.message);
+        auth().signInWithPhoneNumber(phoneNumber)
+            .then(confirm => {
+                // save confirm to state
+                console.log("set confirm");
+                this.setState({
+                    confirm: confirm
                 });
-        }, 2000);
+            })
+            .catch(error => {
+                console.log("error", error);
+                console.log(error.code);
+                switch (error.code) {
+                    case 'auth/billing-not': {
+                        Alert.alert('Số điện thoại không hợp lệ.');
+                        break;
+                    }
+                    default: {
+                        Alert.alert('Đã xảy ra lỗi.');
+                    }
+                }
+                // back
+                this.props.navigation.goBack();
+            });
+    }
+
+    componentDidMount() {
+        this.setupConfirmation();
     }
 
     getAllValue() {
@@ -206,23 +221,30 @@ export default class Verification extends Component {
                 }
                 this.state.confirm.confirm(code)
                     .then(() => {
-                        Alert.alert('Success!');
+                        switch (this.props.route.params.purpose) {
+                            case 'log_up': {
+                                AuthApi.signUp({
+                                    mobile: this.props.route.params.address,
+                                    password: this.props.route.params.password
+                                }).then((res) => {
+                                    this.props.navigation.navigate('LogIn');
+                                }).catch(err => {
+                                    Alert.alert(null, err.response.data.mes);
+                                });
+                                break;
+                            }
+                            case 'password_retrieval': {
+                                this.props.navigation.navigate('ResetPassword', {
+                                    address: this.props.route.params.address
+                                });
+                                break;
+                            }
+                        }
                     })
                     .catch(error => {
-                        Alert.alert('Invalid code.');
+                        console.log(error);
+                        Alert.alert('Mã xác thực không hợp lệ.');
                     });
-                // switch (this.props.route.params.purpose) {
-                //     case 'log_up': {
-                //         this.props.navigation.navigate('LogIn');
-                //         break;
-                //     }
-                //     case 'password_retrieval': {
-                //         this.props.navigation.navigate('ResetPassword', {
-                //             address: this.props.route.params.address
-                //         });
-                //         break;
-                //     }
-                // }
             } catch (error) {
                 console.log(error);
                 Alert.alert('Invalid code.');
@@ -399,7 +421,7 @@ export default class Verification extends Component {
                                 marginTop: 16
                             }}
                             onPress={() => {
-
+                                this.setupConfirmation();
                             }}
                         >
                             <Text style={{ fontSize: 14, color: 'white', }}>Tôi chưa nhận được mã</Text>

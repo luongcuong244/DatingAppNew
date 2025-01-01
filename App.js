@@ -22,6 +22,11 @@ import QuickSearch from './src/screens/QuickSearch';
 import UserApi from './src/api/User.api';
 import { currentUser } from './src/data/CurrentUser';
 import NearbyUser from './src/screens/NearbyUser';
+import SessionListScreen from './src/screens/SessionListScreen';
+import DeviceInfo from 'react-native-device-info';
+import socketChat from './src/socket/socket.config';
+import Geolocation from '@react-native-community/geolocation';
+import { request, PERMISSIONS } from 'react-native-permissions';
 
 LogBox.ignoreAllLogs();
 
@@ -35,16 +40,49 @@ export default function App() {
     useEffect(() => {
         const fetchInitialRoute = async () => {
             try {
-                UserApi.getCurrentInfo()
-                    .then((res) => {
+                const deviceUniqueId = await DeviceInfo.getUniqueId();
+                UserApi.getCurrentInfo({
+                    deviceId: deviceUniqueId,
+                })
+                    .then(async (res) => {
                         if (res.data) {
-                            //currentUser = res.data.data;
                             const userName = res.data.data.name;
                             if (userName) {
                                 setInitialRoute('TabsManager');
                             } else {
                                 setInitialRoute('BasicInformation');
                             }
+                            const deviceName = await DeviceInfo.getDeviceName();
+                            var address = "Unknown";
+                            await request(PERMISSIONS.ANDROID.ACCESS_FINE_LOCATION);
+                            Geolocation.getCurrentPosition(
+                                async position => {
+                                    try {
+                                        const { latitude, longitude } = position.coords;
+                                        const response = await fetch(`https://rsapi.goong.io/Geocode?latlng=${latitude},${longitude}&api_key=crMmofRW2lgZNiDMZtCUdYqHZfGZv1cVZ864e0CR`);
+                                        const data = await response.json();
+                                        address = data.results[0].formatted_address;
+                                        console.log('Address:', address);
+                                    } catch (error) {
+                                        console.error('Failed to get address:', error);
+                                    }
+                                    socketChat.emit('registerSession', {
+                                        userId: res.data.data._id,
+                                        deviceId: deviceUniqueId,
+                                        deviceName: deviceName,
+                                        address: address,
+                                    });
+                                },
+                                error => {
+                                    socketChat.emit('registerSession', {
+                                        userId: res.data.data._id,
+                                        deviceId: deviceUniqueId,
+                                        deviceName: deviceName,
+                                        address: address,
+                                    });
+                                },
+                                { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 },
+                            );
                         } else {
                             setInitialRoute('LogIn');
                         }
@@ -170,6 +208,13 @@ export default function App() {
                 <Stack.Screen
                     name="NearbyUser"
                     component={NearbyUser}
+                    options={{
+                        cardStyleInterpolator: TransitionScreen.leftToRight,
+                    }}
+                />
+                <Stack.Screen
+                    name="SessionListScreen"
+                    component={SessionListScreen}
                     options={{
                         cardStyleInterpolator: TransitionScreen.leftToRight,
                     }}

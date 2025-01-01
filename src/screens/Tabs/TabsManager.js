@@ -12,12 +12,18 @@ import { request, PERMISSIONS, RESULTS } from 'react-native-permissions';
 import UserApi from '../../api/User.api';
 import Geolocation from '@react-native-community/geolocation';
 import NearbyUser from '../NearbyUser';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import socketChat from '../../socket/socket.config';
 
 const Tab = createBottomTabNavigator();
 
 export default function TabsManager(props) {
 
     useEffect(() => {
+        socketChat.on("forceLogout", () => {
+            AsyncStorage.clear();
+            props.navigation.navigate("LogIn");
+        });
         request(PERMISSIONS.ANDROID.ACCESS_FINE_LOCATION)
             .then(async result => {
                 if (result === RESULTS.GRANTED) {

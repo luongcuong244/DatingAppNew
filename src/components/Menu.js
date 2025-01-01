@@ -8,7 +8,7 @@ import {
     Text
 } from 'react-native';
 
-import RateIcon from '../../assets/vectors/rate-icon.svg';
+import RateIcon from '../../assets/vectors/phone.svg';
 import SignoutIcon from '../../assets/vectors/sign-out-icon.svg';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -179,16 +179,19 @@ export default Menu = (props) => {
                             }
                         ]}
                     >
-                        {/* <TouchableOpacity
+                        <TouchableOpacity
                             style={{ width: '100%' }}
+                            onPress={() => {
+                                props.navigation.navigate("SessionListScreen");
+                            }}
                         >
                             <View style={styles.buttonItem} >
 
                                 <RateIcon width={24.09} height={22} style={{ color: 'white' }} />
 
-                                <Text style={{ fontSize: 16, color: 'white', marginLeft: 15 }} >Đánh giá</Text>
+                                <Text style={{ fontSize: 16, color: 'white', marginLeft: 15 }} >Thiết bị</Text>
                             </View>
-                        </TouchableOpacity> */}
+                        </TouchableOpacity>
 
 
                         <TouchableOpacity

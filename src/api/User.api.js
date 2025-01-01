@@ -2,8 +2,12 @@ import { API_URL } from './API_URL';
 import axiosApiInstance from "../config/axios.instance.config";
 
 class User_API {
-    getCurrentInfo() {
-        return axiosApiInstance.get(API_URL + "/users/get-current-info");
+    getCurrentInfo(body) {
+        return axiosApiInstance.post(API_URL + "/users/get-current-info", body);
+    }
+
+    getUserInfo(body) {
+        return axiosApiInstance.post(API_URL + "/users/get-user-info", body);
     }
 
     updateInfo(body) {
@@ -42,6 +46,10 @@ class User_API {
 
     getUserNearby(body) {
         return axiosApiInstance.post(API_URL + "/users/get-user-nearby", body);
+    }
+
+    getUserSessions(body) {
+        return axiosApiInstance.post(API_URL + "/users/get-user-sessions", body);
     }
 }
 
