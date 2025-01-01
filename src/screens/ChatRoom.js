@@ -68,6 +68,8 @@ export default class ChatRoom extends Component {
             isPlayingAudio: false,
             audioPlaying_ID: null,
             timeRemaining: null,
+            isBlock: false, // mình chặn người này
+            isBlocked: false, // người này chặn mình
         }
         this.renderActions = this.renderActions.bind(this);
         this.renderMessageVideo = this.renderMessageVideo.bind(this);
@@ -82,17 +84,35 @@ export default class ChatRoom extends Component {
     }
 
     componentDidMount() {
+        socketChat.on("userBlocked", ({ blockerId, blockedUserId }) => {
+            if (blockerId === this.state.user._id && blockedUserId === this.state.guest._id) {
+                console.log("Bạn đã chặn người này");
+                this.setState({
+                    isBlock: true,
+                })
+            } else if (blockerId === this.state.guest._id && blockedUserId === this.state.user._id) {
+                console.log("Người này đã chặn bạn");
+                this.setState({
+                    isBlocked: true,
+                })
+            }
+        });
+
+        socketChat.on("userUnblocked", ({ blockerId, blockedUserId }) => {
+            if (blockerId === this.state.user._id && blockedUserId === this.state.guest._id) {
+                console.log("Bạn đã bỏ chặn người này");
+                this.setState({
+                    isBlock: false,
+                })
+            } else if (blockerId === this.state.guest._id && blockedUserId === this.state.user._id) {
+                console.log("Người này đã bỏ chặn bạn");
+                this.setState({
+                    isBlocked: false,
+                })
+            }
+        });
+
         const id = this.props.route.params.userId;
-        // Chat_API.getMessagesAndGuestInfor((messages, infor) => {
-        //     this.setState({
-        //         message: messages,
-        //         guest: {
-        //             ...infor,
-        //             userName: this.props.route.params.userName, // có thể xóa
-        //             avatar: this.props.route.params.avatar, // có thể xóa
-        //         },
-        //     })
-        // }, id);
 
         this.setState({
             guest: {
@@ -115,9 +135,15 @@ export default class ChatRoom extends Component {
                         avatar: JSON.parse(user).photos ? JSON.parse(user).photos[0] : null,
                     },
                 })
-                socketChat.on("getAllMessages", (messages) => {
+                socketChat.on("getAllMessages", ({
+                    messages,
+                    isBlock,
+                    isBlocked,
+                }) => {
                     this.setState({
                         messages: messages,
+                        isBlock: isBlock,
+                        isBlocked: isBlocked,
                     })
                 });
                 socketChat.on("newMessage", (message) => {
@@ -148,6 +174,8 @@ export default class ChatRoom extends Component {
         if (infor) {
             SoundPlayer.stop();
         }
+        socketChat.off("userBlocked");
+        socketChat.off("userUnblocked");
         socketChat.off("getAllMessages");
         socketChat.off("newMessage");
         socketChat.off("update_messages");
@@ -857,6 +885,9 @@ export default class ChatRoom extends Component {
     }
 
     showProfile() {
+        if (this.state.isBlock || this.state.isBlocked) {
+            return;
+        }
         console.log("Show profile", this.state.guest);
         UserApi.getUserInfo({
             userId: this.state.guest._id,
@@ -1033,7 +1064,66 @@ export default class ChatRoom extends Component {
                                 renderSend={this.renderSend}
                                 renderChatFooter={this.renderChatFooter}
                                 renderComposer={this.renderComposer}
-                                renderInputToolbar={this.renderInputToolbar}
+                                renderInputToolbar={(props) => {
+                                    if (this.state.isBlock) {
+                                        return <View
+                                            style={{
+                                                width: '100%',
+                                                height: 60,
+                                                backgroundColor: '#fafafa',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                            }}
+                                        >
+                                            <TouchableOpacity
+                                                style={{ 
+                                                    width: '30%', 
+                                                    height: 30, 
+                                                    justifyContent: 'center', 
+                                                    alignItems: 'center',
+                                                    backgroundColor: '#3979f7',
+                                                    borderRadius: 5,
+                                                }}
+                                                onPress={() => {
+                                                    socketChat.emit("unblockUser", {
+                                                        _id: this.state.user._id,
+                                                        blockedUserId: this.state.guest._id,
+                                                    })
+                                                }}
+                                            >
+                                                <Text
+                                                    style={{ color: 'white', fontSize: 15 }}
+                                                >Bỏ chặn</Text>
+                                            </TouchableOpacity>
+                                        </View>
+                                    }
+                                    if (this.state.isBlocked) {
+                                        return <View
+                                            style={{
+                                                width: '100%',
+                                                height: 44,
+                                                backgroundColor: '#fafafa',
+                                            }}
+                                        >
+                                            <Text style={{ color: 'red', fontSize: 15, fontWeight: 'bold', textAlign: 'center', marginTop: 10 }}>Bạn đã bị chặn</Text>
+                                        </View>
+                                    }
+                                    return (
+                                        <InputToolbar
+                                            {...props}
+                                            containerStyle={{
+                                                width: '100%',
+                                                height: 44,
+                                                backgroundColor: '#fafafa',
+                                                alignItems: 'center',
+                                                flexDirection: 'column-reverse',
+                                                borderTopWidth: 1.5,
+                                                borderTopColor: 'rgba(170,170,170,0.7)'
+                                            }}
+                                            primaryStyle={{ alignItems: 'center' }}
+                                        />
+                                    );
+                                }}
                                 renderMessageVideo={this.renderMessageVideo}
                                 renderMessageImage={this.renderMessageImage}
                                 renderTicks={(currentMessage) => {

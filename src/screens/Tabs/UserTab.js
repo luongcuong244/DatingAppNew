@@ -19,10 +19,8 @@ import TickIcon from '../../../assets/vectors/tick.svg';
 import ArrowRightIcon from '../../../assets/vectors/arrow-right-ios.svg';
 import DeleteHobbyIcon from '../../../assets/vectors/delete-hobby.svg';
 import ListPhotos from '../../components/ListPhotos';
-import { currentUser } from '../../data/CurrentUser';
 import { inforFormatForTrans } from "../../module/InforFormatForTrans";
 import UserApi from '../../api/User.api';
-import { string } from 'prop-types';
 import DeviceInfo from 'react-native-device-info';
 
 const WIDTH_SCREEN = Dimensions.get('window').width;

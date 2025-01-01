@@ -16,6 +16,8 @@ import MaleIcon from '../../assets/vectors/male-icon.svg';
 import FemaleIcon from '../../assets/vectors/female-icon.svg';
 import TransgenderIcon from '../../assets/vectors/transgender-icon.svg';
 import UserApi from "../api/User.api";
+import socketChat from '../socket/socket.config';
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const WIDTH_SCREEN = Dimensions.get('window').width;
 const HEIGHT_SCREEN = Dimensions.get('window').height;
@@ -450,17 +452,17 @@ export default function UserProfile({ navigation, onBack, route = { params: { li
                     route.params.showBlockButton && (
                         <TouchableOpacity
                             onPress={() => {
-                                // UserApi.addToListLike({
-                                //     userIdToAdd: route.params.userInfo._id,
-                                // })
-                                //     .then((response) => {
-                                //         route.params.onNavigateBack && route.params.onNavigateBack();
-                                //         navigation.goBack();
-                                //     })
-                                //     .catch((err) => {
-                                //         console.log(err);
-                                //         Alert.alert("Lỗi", "Thích không thành công");
-                                //     })
+                                AsyncStorage.getItem('user')
+                                    .then((user) => {
+                                        socketChat.emit('blockUser', {
+                                            _id: JSON.parse(user)._id,
+                                            blockedUserId: route.params.userInfo._id,
+                                        });
+                                        navigation.goBack();
+                                    })
+                                    .catch((err) => {
+                                        console.log(err);
+                                    })
                             }}
                             activeOpacity={0.8}
                             style={[
