@@ -11,6 +11,7 @@ import {
 import RateIcon from '../../assets/vectors/phone.svg';
 import SignoutIcon from '../../assets/vectors/sign-out-icon.svg';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import AuthApi from '../api/Auth.api';
 
 export default Menu = (props) => {
 
@@ -197,10 +198,17 @@ export default Menu = (props) => {
                         <TouchableOpacity
                             style={{ width: '100%' }}
                             onPress={() => {
-                                // clear token
-                                AsyncStorage.setItem('user', '');
-                                AsyncStorage.setItem('accessToken', '');
-                                props.navigation.navigate("LogIn");
+                                AuthApi.signOut().then(() => {
+                                    AsyncStorage.setItem('user', null);
+                                    AsyncStorage.setItem('accessToken', null);
+                                    // navigate to login and clear all stack
+                                    props.navigation.reset({
+                                        index: 0,
+                                        routes: [{ name: 'LogIn' }],
+                                    });
+                                }).catch(err => {
+                                    console.log(err);
+                                });
                             }}
                         >
                             <View style={styles.buttonItem} >

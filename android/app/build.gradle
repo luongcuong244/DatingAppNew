@@ -108,7 +108,7 @@ android {
             // Caution! In production, you need to generate your own keystore file.
             // see https://reactnative.dev/docs/signed-apk-android.
             signingConfig signingConfigs.debug
-            minifyEnabled enableProguardInReleaseBuilds
+            minifyEnabled true
             proguardFiles getDefaultProguardFile("proguard-android.txt"), "proguard-rules.pro"
         }
     }
@@ -118,6 +118,9 @@ dependencies {
     // The version of react-native is set by the React Native Gradle Plugin
     implementation("com.facebook.react:react-android")
     implementation project(':react-native-device-info')
+
+    implementation("androidx.biometric:biometric:1.1.0")
+    implementation("androidx.biometric:biometric:1.4.0-alpha02")
 
     if (hermesEnabled.toBoolean()) {
         implementation("com.facebook.react:hermes-android")

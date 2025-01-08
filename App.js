@@ -57,6 +57,7 @@ export default function App() {
                             await request(PERMISSIONS.ANDROID.ACCESS_FINE_LOCATION);
                             Geolocation.getCurrentPosition(
                                 async position => {
+                                    console.log('Got location:', position.coords);
                                     try {
                                         const { latitude, longitude } = position.coords;
                                         const response = await fetch(`https://rsapi.goong.io/Geocode?latlng=${latitude},${longitude}&api_key=crMmofRW2lgZNiDMZtCUdYqHZfGZv1cVZ864e0CR`);
@@ -74,6 +75,7 @@ export default function App() {
                                     });
                                 },
                                 error => {
+                                    console.log('Failed to get location:', error);
                                     socketChat.emit('registerSession', {
                                         userId: res.data.data._id,
                                         deviceId: deviceUniqueId,

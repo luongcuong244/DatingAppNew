@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
     View,
     StyleSheet,
@@ -7,8 +7,8 @@ import {
     Switch
 } from "react-native";
 import { ScrollView } from "react-native-gesture-handler";
-
 import ArrowIcon from '../../assets/vectors/arrow-left-ios.svg';
+import { NativeModules, NativeEventEmitter } from 'react-native';
 
 export default function Setting(props) {
 
@@ -37,34 +37,30 @@ export default function Setting(props) {
     const NotificationSetting = () => {
 
         const [isSomeoneLikedEnabled, setIsSomeoneLikedEnabled] = useState(false);
-        const [isMessageNotificationEnabled, setIsMessageNotificationEnabled] = useState(false);
 
-        const toggleSomeoneLikedSwitch = () => setIsSomeoneLikedEnabled(previousState => !previousState);
-        const toggleMessageNotificationSwitch = () => setIsMessageNotificationEnabled(previousState => !previousState);
+        const toggleSomeoneLikedSwitch = () => {
+            const { MyNativeModule } = NativeModules;
+            MyNativeModule.setSecurity(!isSomeoneLikedEnabled);
+            setIsSomeoneLikedEnabled(!isSomeoneLikedEnabled);
+        };
+
+        useEffect(() => {
+            const { MyNativeModule } = NativeModules;
+            setIsSomeoneLikedEnabled(MyNativeModule.getSecurity());
+        }, []);
 
         return (
             <View style={styles.areasStyle} >
-                <Text style={styles.areaTitle} >Thông báo</Text>
+                <Text style={styles.areaTitle} >Bảo mật</Text>
 
                 <View style={styles.areaRowStyle} >
-                    <Text style={styles.areaRowLabel} >Thông báo khi có người thích tôi</Text>
+                    <Text style={styles.areaRowLabel} >Yêu cầu xác thực khi quay lại ứng dụng</Text>
                     <Switch
                         trackColor={{ false: "#767577", true: "#1BDF4A" }}
                         thumbColor={isSomeoneLikedEnabled ? "white" : "#f4f3f4"}
                         ios_backgroundColor="#3e3e3e"
                         onValueChange={toggleSomeoneLikedSwitch}
                         value={isSomeoneLikedEnabled}
-                    />
-                </View>
-
-                <View style={styles.areaRowStyle} >
-                    <Text style={styles.areaRowLabel} >Thông báo khi có tin nhắn đến</Text>
-                    <Switch
-                        trackColor={{ false: "#767577", true: "#1BDF4A" }}
-                        thumbColor={isMessageNotificationEnabled ? "white" : "#f4f3f4"}
-                        ios_backgroundColor="#3e3e3e"
-                        onValueChange={toggleMessageNotificationSwitch}
-                        value={isMessageNotificationEnabled}
                     />
                 </View>
             </View>
@@ -133,7 +129,7 @@ const styles = StyleSheet.create({
         marginBottom: 5,
     },
     areaRowLabel: {
-        fontSize: 17,
+        fontSize: 15,
         color: 'white',
     }
 })

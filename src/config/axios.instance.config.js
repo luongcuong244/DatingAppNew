@@ -13,7 +13,9 @@ const axiosApiInstance = axios.create({
 axiosApiInstance.interceptors.request.use(
     async config => {
         if (config.url.indexOf('/auths') >= 0 || config.url.indexOf('/create-new-user') >= 0) {
-            return config;
+            if (config.url.indexOf('/auths/logout') < 0) {
+                return config;
+            }
         }
 
         const accessToken = await AsyncStorage.getItem('accessToken');

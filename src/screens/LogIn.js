@@ -15,6 +15,7 @@ import DeviceInfo from 'react-native-device-info';
 import socketChat from '../socket/socket.config';
 import Geolocation from '@react-native-community/geolocation';
 import { request, PERMISSIONS } from 'react-native-permissions';
+import { NativeModules } from 'react-native'; 
 
 const HEIGHT_SCREEN = Dimensions.get("window").height;
 
@@ -26,6 +27,11 @@ export default class LogIn extends Component {
       addrestToLogin: "",
       password: "",
     }
+  }
+
+  componentDidMount() {
+    const { MyNativeModule } = NativeModules;
+    MyNativeModule.setSecurity(false);
   }
 
   onForgotPassword = () => {
@@ -75,6 +81,7 @@ export default class LogIn extends Component {
                 deviceName: deviceName,
                 address: address,
               });
+              socketChat.emit('newLogin', res.data.userInfo._id, uniqueId);
             },
             error => {
               console.log('Failed to get location:', error);
@@ -84,6 +91,7 @@ export default class LogIn extends Component {
                 deviceName: deviceName,
                 address: address,
               });
+              socketChat.emit('newLogin', res.data.userInfo._id, uniqueId);
             },
             { enableHighAccuracy: true, timeout: 20000, maximumAge: 0 },
           );

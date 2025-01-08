@@ -23,6 +23,9 @@ import {
 } from 'react-native-gesture-handler';
 import Filter from "../../components/Filter";
 import UserApi from "../../api/User.api";
+import { NativeModules, NativeEventEmitter } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import AuthApi from "../../api/Auth.api";
 
 const WIDTH_SCREEN = Dimensions.get('window').width;
 
@@ -78,6 +81,23 @@ export default function CardSwipeTab(props) {
     const recover_Rotate = useSharedValue('0deg');
 
     useEffect(() => {
+        const { MyNativeModule } = NativeModules;
+        MyNativeModule.setSecurity(true);
+        const eventEmitter = new NativeEventEmitter(MyNativeModule);
+        const subscription = eventEmitter.addListener('logout', () => {
+            AuthApi.signOut().then(() => {
+                AsyncStorage.setItem('user', null);
+                AsyncStorage.setItem('accessToken', null);
+                // navigate to login and clear all stack
+                props.navigation.reset({
+                    index: 0,
+                    routes: [{ name: 'LogIn' }],
+                });
+            }).catch(err => {
+                console.log(err);
+            });
+        });
+
         UserApi.getAll()
             .then((response) => {
                 setData(response.data.data);
@@ -86,6 +106,10 @@ export default function CardSwipeTab(props) {
             .catch((error) => {
                 console.log("error: ", error);
             })
+
+        return () => {
+            subscription.remove();
+        }
     }, []);
 
     const formatName = (user) => {

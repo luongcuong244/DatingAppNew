@@ -14,6 +14,8 @@ import Geolocation from '@react-native-community/geolocation';
 import NearbyUser from '../NearbyUser';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import socketChat from '../../socket/socket.config';
+import AuthApi from '../../api/Auth.api';
+import Snackbar from 'react-native-snackbar';
 
 const Tab = createBottomTabNavigator();
 
@@ -21,8 +23,28 @@ export default function TabsManager(props) {
 
     useEffect(() => {
         socketChat.on("forceLogout", () => {
-            AsyncStorage.clear();
-            props.navigation.navigate("LogIn");
+            AuthApi.signOut().then(() => {
+                AsyncStorage.setItem('user', null);
+                AsyncStorage.setItem('accessToken', null);
+                // navigate to login and clear all stack
+                props.navigation.reset({
+                    index: 0,
+                    routes: [{ name: 'LogIn' }],
+                });
+            }).catch(err => {
+                console.log(err);
+            });
+        });
+        socketChat.on('notification', (data) => {
+            console.log(data);
+            Snackbar.show({
+                text: data.message,
+                duration: Snackbar.LENGTH_INDEFINITE,
+                action: {
+                    text: 'Ok',
+                    textColor: 'white',
+                },
+            });
         });
         request(PERMISSIONS.ANDROID.ACCESS_FINE_LOCATION)
             .then(async result => {
@@ -49,6 +71,11 @@ export default function TabsManager(props) {
             .catch(error => {
                 console.log(error);
             });
+
+        return () => {
+            socketChat.off('forceLogout');
+            socketChat.off('notification');
+        };
     }, []);
 
     return (

@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet } from 'react-native';
+import React, { useEffect, useState, useRef } from 'react';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, Modal, TextInput } from 'react-native';
 import UserApi from '../api/User.api';
 import DeviceInfo from 'react-native-device-info';
 import socketChat from '../socket/socket.config';
@@ -7,6 +7,9 @@ import ArrowIcon from '../../assets/vectors/arrow-left-ios.svg';
 
 const SessionListScreen = (props) => {
     const [sessions, setSessions] = useState([]);
+    const [modalVisible, setModalVisible] = useState(false);
+    const [inputText, setInputText] = useState('');
+    const item = useRef(null);
 
     useEffect(() => {
         fetchSessions();
@@ -18,6 +21,17 @@ const SessionListScreen = (props) => {
             socketChat.off('forceLogoutSuccess');
         }
     }, []);
+
+    const handleConfirm = () => {
+        setResultText(inputText); // Lưu text đã nhập
+        setModalVisible(false);  // Ẩn dialog
+        handleTerminalPress(item.current);
+    };
+
+    const handleCancel = () => {
+        setInputText(''); // Xóa text đã nhập
+        setModalVisible(false); // Ẩn dialog
+    };
 
     const fetchSessions = () => {
         DeviceInfo.getUniqueId().then(async uniqueId => {
@@ -51,7 +65,11 @@ const SessionListScreen = (props) => {
             <Text style={styles.text}>Thời gian đăng nhập: {item.createdAt}</Text>
             <TouchableOpacity
                 style={styles.button}
-                onPress={() => handleTerminalPress(item)}
+                //onPress={() => handleTerminalPress(item)}
+                onPress={() => {
+                    setModalVisible(true);
+                    item.current = item;
+                }}
             >
                 <Text style={styles.buttonText}>Terminal</Text>
             </TouchableOpacity>
@@ -104,6 +122,33 @@ const SessionListScreen = (props) => {
                     </View>
                 )
             }
+            <Modal
+                visible={modalVisible}
+                animationType="slide"
+                transparent={true}
+                onRequestClose={() => setModalVisible(false)}
+            >
+                <View style={styles.modalContainer}>
+                    <View style={styles.modalContent}>
+                        <Text style={styles.modalTitle}>Xác nhận mật khẩu</Text>
+                        <TextInput
+                            style={styles.input}
+                            placeholder="Nhập mật khẩu..."
+                            value={inputText}
+                            secureTextEntry={true}
+                            onChangeText={setInputText}
+                        />
+                        <View style={styles.buttonRow}>
+                            <TouchableOpacity style={styles.button} onPress={handleCancel}>
+                                <Text style={styles.buttonText}>Hủy</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity style={styles.button} onPress={handleConfirm}>
+                                <Text style={styles.buttonText}>Xác nhận</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </View>
+            </Modal>
         </View>
     );
 };
@@ -169,6 +214,52 @@ const styles = StyleSheet.create({
     },
     flatListContent: {
         paddingVertical: 10,
+    },
+    modalContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    },
+    modalContent: {
+        width: '80%',
+        backgroundColor: 'white',
+        borderRadius: 10,
+        padding: 20,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.5,
+        shadowRadius: 4,
+        elevation: 5,
+    },
+    modalTitle: {
+        fontSize: 20,
+        fontWeight: 'bold',
+        marginBottom: 10,
+    },
+    input: {
+        height: 40,
+        borderColor: '#ccc',
+        borderWidth: 1,
+        borderRadius: 5,
+        marginBottom: 20,
+        paddingHorizontal: 10,
+    },
+    buttonRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+    },
+    button: {
+        flex: 1,
+        padding: 10,
+        marginHorizontal: 5,
+        borderRadius: 5,
+        backgroundColor: '#007BFF',
+        alignItems: 'center',
+    },
+    buttonText: {
+        color: 'white',
+        fontSize: 16,
     },
 });
 

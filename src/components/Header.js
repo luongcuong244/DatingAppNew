@@ -40,7 +40,7 @@ export default Header = (props) => {
                     props.navigation.navigate("Setting");
                 }}
             >
-                {/* <SettingIcon width={30} height={30} /> */}
+                <SettingIcon width={30} height={30} />
             </TouchableOpacity>
         </View>
     )
