@@ -17,6 +17,8 @@ import socketChat from '../socket/socket.config';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import BottomSheet from 'react-native-simple-bottom-sheet';
 import UserApi from "../api/User.api";
+import DeviceInfo from 'react-native-device-info';
+import RsaUtils from '../utils/rsa_utils';
 
 LogBox.ignoreLogs(['Animated.event now requires a second argument for options']);
 
@@ -121,6 +123,20 @@ export default class ChatRoom extends Component {
                 avatar: this.props.route.params.avatar,
             }
         })
+
+        // DeviceInfo.getUniqueId().then(async (deviceId) => {
+        //     socket.on("receiveRSAPublicKeyAndDeviceId", async ({ rsaPublicKey, deviceId }) => {
+        //         console.log("Nhận key public", rsaPublicKey);
+        //         console.log("Nhận deviceId", deviceId);
+        //     });
+
+        //     const { publicKey } = await RsaUtils.getPairKey();
+        //     socket.emit("sendRSAPublicKeyAndDeviceId", {
+        //         "userId": id,
+        //         "deviceId": deviceId,
+        //         "rsaPublicKey": publicKey,
+        //     });
+        // });
 
         AsyncStorage.getItem("user")
             .then((user) => {

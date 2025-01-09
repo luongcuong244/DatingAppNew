@@ -9,8 +9,8 @@ class RsaUtils {
         AsyncStorage.setItem('private_key', keys.private);
         AsyncStorage.setItem('public_key', keys.public);
         return {
-            private: keys.private,
-            public: keys.public
+            privateKey: keys.private,
+            publicKey: keys.public
         };
     }
 
@@ -20,7 +20,7 @@ class RsaUtils {
         if (privateKey == null || publicKey == null) {
             return await this._generatePairKey();
         }
-        return { private: privateKey, public: publicKey };
+        return { privateKey: privateKey, publicKey: publicKey };
     }
 }
 
