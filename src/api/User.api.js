@@ -1,5 +1,7 @@
 import { API_URL } from './API_URL';
 import axiosApiInstance from "../config/axios.instance.config";
+import DeviceInfo from 'react-native-device-info';
+import RsaUtils from '../utils/rsa_utils';
 
 class User_API {
     getCurrentInfo(body) {
@@ -50,6 +52,15 @@ class User_API {
 
     getUserSessions(body) {
         return axiosApiInstance.post(API_URL + "/users/get-user-sessions", body);
+    }
+
+    async sendRsaDeviceInfo() {
+        const rsaPublicKey = (await RsaUtils.getPairKey()).publicKey;
+        const deviceId = await DeviceInfo.getUniqueId();
+        return axiosApiInstance.post(API_URL + "/users/send-rsa-device-info", {
+            rsaPublicKey,
+            deviceId,
+        });
     }
 }
 

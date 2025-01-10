@@ -22,6 +22,8 @@ const Tab = createBottomTabNavigator();
 export default function TabsManager(props) {
 
     useEffect(() => {
+        UserApi.sendRsaDeviceInfo();
+
         socketChat.on("forceLogout", () => {
             AuthApi.signOut().then(() => {
                 AsyncStorage.setItem('user', null);

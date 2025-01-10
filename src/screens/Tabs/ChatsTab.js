@@ -16,11 +16,12 @@ import { CircleSnail } from 'react-native-progress';
 import Animated, { useSharedValue, useAnimatedStyle, withTiming } from 'react-native-reanimated';
 
 import ChatRow from '../../components/ChatRow';
-import { ChatListData } from '../../DataTest';
 
 import SearchIcon from '../../../assets/vectors/search.svg';
 import socketChat from '../../socket/socket.config';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import RsaUtils from '../../utils/rsa_utils';
+import DeviceInfo from 'react-native-device-info';
 
 const WIDTH_SCREEN = Dimensions.get('window').width;
 
@@ -120,19 +121,35 @@ export default function ChatsTab({ navigation }) {
 
     useEffect(() => {
         AsyncStorage.getItem("user")
-            .then((user) => {
+            .then(async (user) => {
+                const deviceId = await DeviceInfo.getUniqueId();
                 socketChat.emit("getChatList", {
                     userId: JSON.parse(user)._id,
                 });
-                socketChat.on("getChatList", (data) => {
-                    console.log("Get chat list: ", data);
-                    setChatList(data.chatList.map((item) => {
+                socketChat.on("getChatList", async (data) => {
+                    setChatList(await Promise.all(data.chatList.map(async (item) => {
+                        var { message } = item;
+                        if (Array.isArray(message) && message.length > 0) {
+                            try {
+                                const info = message.find(info => info.userId === JSON.parse(user)._id && info.deviceId === deviceId);
+                                if (info && info.encryptedText) {
+                                    const decryptedText = await RsaUtils.decrypt(info.encryptedText);
+                                    message = decryptedText;
+                                } else {
+                                    message = "Unreadable message";
+                                }
+                            } catch (error) {
+                                console.log("Error: ", error);
+                                message = "Unreadable message";
+                            }
+                        }
+
                         return {
                             ...item,
+                            message: message,
                             time: new Date(item.time),
-                        }
-                    }));
-                    // setSearchList(list);
+                        };
+                    })));
                     setIsLoading(false);
                 });
                 socketChat.on("update_rows", () => {

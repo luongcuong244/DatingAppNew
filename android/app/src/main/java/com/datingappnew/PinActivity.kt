@@ -33,9 +33,11 @@ class PinActivity : AppCompatActivity() {
         val biometricManager = BiometricManager.from(this)
         when (biometricManager.canAuthenticate(BiometricManager.Authenticators.BIOMETRIC_STRONG)) {
             BiometricManager.BIOMETRIC_SUCCESS -> {
+                // Nếu có hỗ trợ sinh trắc học, hiển thị prompt để xác thực
                 showBiometricPrompt()
             }
             else -> {
+                // Nếu không hỗ trợ sinh trắc học, hiển thị prompt để xác thực bằng mật khẩu hoặc mã PIN
                 showDeviceCredentialPrompt()
             }
         }

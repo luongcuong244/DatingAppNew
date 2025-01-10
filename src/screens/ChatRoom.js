@@ -6,16 +6,14 @@ import ImagePicker from "react-native-image-crop-picker";
 import AntDesign from 'react-native-vector-icons/AntDesign';
 import VideoPlayer from 'react-native-video-controls';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
-import moment, { duration } from "moment";
+import moment from "moment";
 import DocumentPicker from 'react-native-document-picker';
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
 import SoundPlayer from 'react-native-sound-player';
 import MultiSlider from '@ptomasroos/react-native-multi-slider';
-import Chat_API from '../api/Chat.api';
 import DisplayImageFullScreen from '../components/DisplayImageFullScreen';
 import socketChat from '../socket/socket.config';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import BottomSheet from 'react-native-simple-bottom-sheet';
 import UserApi from "../api/User.api";
 import DeviceInfo from 'react-native-device-info';
 import RsaUtils from '../utils/rsa_utils';
@@ -72,6 +70,8 @@ export default class ChatRoom extends Component {
             timeRemaining: null,
             isBlock: false, // mình chặn người này
             isBlocked: false, // người này chặn mình
+            userRsaDeviceInfos: [],
+            guestRsaDeviceInfos: [],
         }
         this.renderActions = this.renderActions.bind(this);
         this.renderMessageVideo = this.renderMessageVideo.bind(this);
@@ -124,26 +124,9 @@ export default class ChatRoom extends Component {
             }
         })
 
-        // DeviceInfo.getUniqueId().then(async (deviceId) => {
-        //     socket.on("receiveRSAPublicKeyAndDeviceId", async ({ rsaPublicKey, deviceId }) => {
-        //         console.log("Nhận key public", rsaPublicKey);
-        //         console.log("Nhận deviceId", deviceId);
-        //     });
-
-        //     const { publicKey } = await RsaUtils.getPairKey();
-        //     socket.emit("sendRSAPublicKeyAndDeviceId", {
-        //         "userId": id,
-        //         "deviceId": deviceId,
-        //         "rsaPublicKey": publicKey,
-        //     });
-        // });
-
         AsyncStorage.getItem("user")
-            .then((user) => {
-                socketChat.emit("getAllMessages", {
-                    userId: JSON.parse(user)._id,
-                    guestId: id,
-                });
+            .then(async (user) => {
+                const deviceId = await DeviceInfo.getUniqueId();
                 this.setState({
                     user: {
                         _id: JSON.parse(user)._id,
@@ -151,21 +134,51 @@ export default class ChatRoom extends Component {
                         avatar: JSON.parse(user).photos ? JSON.parse(user).photos[0] : null,
                     },
                 })
-                socketChat.on("getAllMessages", ({
+                socketChat.on("getAllMessages", async ({
                     messages,
                     isBlock,
                     isBlocked,
                 }) => {
+                    let newMessages = [];
+                    for (let message of messages) {
+                        try {
+                            if (message.system) {
+                                newMessages.push(message);
+                                continue;
+                            }
+                            const { encryptedText } = message.rsaDeviceInfos.find(info => info.userId === JSON.parse(user)._id && info.deviceId === deviceId);
+                            if (!encryptedText) {
+                                continue;
+                            }
+                            const text = await RsaUtils.decrypt(encryptedText);
+                            message.text = text;
+                            newMessages.push(message);
+                        } catch (error) {
+                            console.error("Error during decryption:", error);
+                        }
+                    }
                     this.setState({
-                        messages: messages,
+                        messages: newMessages,
                         isBlock: isBlock,
                         isBlocked: isBlocked,
                     })
                 });
-                socketChat.on("newMessage", (message) => {
-                    this.setState(previousState => ({
-                        messages: GiftedChat.append(previousState.messages, message),
-                    }));
+                socketChat.on("newMessage", async (message) => {
+                    try {
+                        if (!message.system) {
+                            const { encryptedText } = message.rsaDeviceInfos.find(info => info.userId === JSON.parse(user)._id && info.deviceId === deviceId);
+                            if (!encryptedText) {
+                                return;
+                            }
+                            const text = await RsaUtils.decrypt(encryptedText);
+                            message.text = text;
+                        }
+                        this.setState(previousState => ({
+                            messages: GiftedChat.append(previousState.messages, message),
+                        }));
+                    } catch (error) {
+                        console.error("Error during decryption:", error);
+                    }
                 });
 
                 // thu hooid tin nhan
@@ -178,7 +191,28 @@ export default class ChatRoom extends Component {
                         guestId: id,
                     });
                     socketChat.emit("update_rows");
-                })
+                });
+
+                socketChat.on("receiveAllRsaDeviceInfos", (data) => {
+                    const userRsaDeviceInfos = data.userRsaDeviceInfos;
+                    const guestRsaDeviceInfos = data.guestRsaDeviceInfos;
+                    this.setState({
+                        userRsaDeviceInfos: userRsaDeviceInfos,
+                        guestRsaDeviceInfos: guestRsaDeviceInfos,
+                    })
+                });
+
+                // lấy tin nhắn của 2 người
+                socketChat.emit("getAllMessages", {
+                    userId: JSON.parse(user)._id,
+                    guestId: id,
+                });
+
+                // lấy thông tin thiết bị của 2 người
+                socketChat.emit("getAllRsaDeviceInfos", {
+                    userId: JSON.parse(user)._id,
+                    guestId: id,
+                });
             });
     }
 
@@ -195,37 +229,70 @@ export default class ChatRoom extends Component {
         socketChat.off("getAllMessages");
         socketChat.off("newMessage");
         socketChat.off("update_messages");
+        socketChat.off("receiveAllRsaDeviceInfos"); 
     }
 
-    _onSend(message = []) {
+    async _onSend(message = []) {
         if (this.state.file) {
             message[0].image = this.state.file;
             this.setState({
                 file: null,
-            })
+            });
         }
         if (this.state.video) {
             message[0].video = this.state.video;
             this.setState({
                 video: null,
-            })
+            });
         }
 
         message[0].sent = false;
         message[0].received = false;
         message[0].pending = true;
 
-        // this.setState(previousState => ({
-        //     messages: GiftedChat.append(previousState.messages, message[0]),
-        // }));
+        if (this.state.userRsaDeviceInfos.length === 0 || this.state.guestRsaDeviceInfos.length === 0) {
+            console.log("Chưa lấy được public key");
+            return;
+        }
 
-        socketChat.emit("send_message", {
-            message: message[0],
-            guestId: this.props.route.params.userId,
-        });
-        setTimeout(() => {
-            socketChat.emit("update_rows");
-        }, 2000);
+        try {
+            // Xử lý bất đồng bộ cho senderPublicKeyEncryptedText
+            const senderPublicKeyEncryptedText = await Promise.all(
+                this.state.userRsaDeviceInfos.map(async (info) => {
+                    const encryptedText = await RsaUtils.encrypt(message[0].text, info.publicKey);
+                    return {
+                        ...info,
+                        encryptedText,
+                    };
+                })
+            );
+
+            // Xử lý bất đồng bộ cho receiverPublicKeyEncryptedText
+            const receiverPublicKeyEncryptedText = await Promise.all(
+                this.state.guestRsaDeviceInfos.map(async (info) => {
+                    const encryptedText = await RsaUtils.encrypt(message[0].text, info.publicKey);
+                    return {
+                        ...info,
+                        encryptedText,
+                    };
+                })
+            );
+
+            // Gửi dữ liệu qua socket
+            socketChat.emit("send_message", {
+                message: message[0],
+                guestId: this.props.route.params.userId,
+                senderPublicKeyEncryptedText,
+                receiverPublicKeyEncryptedText,
+            });
+
+            // Gửi yêu cầu cập nhật
+            setTimeout(() => {
+                socketChat.emit("update_rows");
+            }, 2000);
+        } catch (error) {
+            console.error("Error during encryption:", error);
+        }
     }
 
     renderAvatar(props) {

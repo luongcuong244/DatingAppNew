@@ -22,6 +22,15 @@ class RsaUtils {
         }
         return { privateKey: privateKey, publicKey: publicKey };
     }
+
+    static async encrypt(text, publicKey) {
+        return RSA.encrypt(text, publicKey);
+    }
+
+    static async decrypt(text) {
+        const { privateKey } = await this.getPairKey();
+        return RSA.decrypt(text, privateKey);
+    }
 }
 
 export default RsaUtils;

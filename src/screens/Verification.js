@@ -58,16 +58,14 @@ export default class Verification extends Component {
     };
 
     setupConfirmation() {
-        console.log("componentDidMount");
         const phoneNumber = this.toE164Format(this.props.route.params.address);
         console.log("phoneNumber", phoneNumber);
         auth().signOut();
         auth().signInWithPhoneNumber(phoneNumber)
-            .then(confirm => {
-                // save confirm to state
-                console.log("set confirm");
+            .then(confirmation => {
+                // save confirmation to state
                 this.setState({
-                    confirm: confirm
+                    confirm: confirmation
                 });
             })
             .catch(error => {

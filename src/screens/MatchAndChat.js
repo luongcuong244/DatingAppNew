@@ -21,7 +21,8 @@ import LabelHighlightOne from '../../assets/vectors/MatchLabel/half-match-thin.s
 import LabelHighlightTwo from '../../assets/vectors/MatchLabel/half-match-more-thin.svg';
 import ChatApi from '../api/Chat.api';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-
+import RsaUtils from '../utils/rsa_utils';
+import socketChat from '../socket/socket.config';
 const WIDTH_SCREEN = Dimensions.get('window').width;
 const HEIGHT_SCREEN = Dimensions.get('window').height;
 
@@ -60,6 +61,9 @@ export default MatchAndChat = (props) => {
     const isMove = useRef(false);
     const labelScale = useRef((WIDTH_SCREEN * 0.8 / 321.39)).current;
 
+    const userRsaDeviceInfos = useRef([]);
+    const guestRsaDeviceInfos = useRef([]);
+
     function onKeyboardDidShow() {
         setShowingMatchLabel(false);
         //setShowingKeyBoard(true);
@@ -72,6 +76,17 @@ export default MatchAndChat = (props) => {
     }
 
     useEffect(() => {
+        AsyncStorage.getItem("user").then((user) => {
+            // lấy thông tin thiết bị của 2 người
+            socketChat.emit("getAllRsaDeviceInfos", {
+                userId: JSON.parse(user)._id,
+                guestId: props.route.params.userId,
+            });
+            socketChat.on("receiveAllRsaDeviceInfos", (data) => {
+                userRsaDeviceInfos.current = data.userRsaDeviceInfos;
+                guestRsaDeviceInfos.current = data.guestRsaDeviceInfos;            
+            });
+        });
 
         setTimeout(() => {
             startAnim();
@@ -82,6 +97,7 @@ export default MatchAndChat = (props) => {
         return () => {
             showSubscription.remove();
             hideSubscription.remove();
+            socketChat.off("receiveAllRsaDeviceInfos");
         };
     }, []);
 
@@ -321,12 +337,34 @@ export default MatchAndChat = (props) => {
     const onSend = () => {
         if (message) {
             AsyncStorage.getItem("user")
-                .then((user) => {
+                .then(async (user) => {
+                    // Xử lý bất đồng bộ cho senderPublicKeyEncryptedText
+                    const senderPublicKeyEncryptedText = await Promise.all(
+                        userRsaDeviceInfos.current.map(async (info) => {
+                            const encryptedText = await RsaUtils.encrypt(message, info.publicKey);
+                            return {
+                                ...info,
+                                encryptedText,
+                            };
+                        })
+                    );
+
+                    // Xử lý bất đồng bộ cho receiverPublicKeyEncryptedText
+                    const receiverPublicKeyEncryptedText = await Promise.all(
+                        guestRsaDeviceInfos.current.map(async (info) => {
+                            const encryptedText = await RsaUtils.encrypt(message, info.publicKey);
+                            return {
+                                ...info,
+                                encryptedText,
+                            };
+                        })
+                    );
                     ChatApi.addMessage({
-                        text: message,
                         receiver: props.route.params.userId,
                         sender: JSON.parse(user)._id,
                         room: props.route.params.roomId,
+                        senderPublicKeyEncryptedText,
+                        receiverPublicKeyEncryptedText,
                         system: false,
                     })
                         .then(res => {
